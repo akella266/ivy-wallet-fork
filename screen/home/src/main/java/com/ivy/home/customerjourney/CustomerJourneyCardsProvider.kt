@@ -4,7 +4,7 @@ import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.stringRes
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.dao.read.PlannedPaymentRuleDao
-import com.ivy.data.db.dao.read.TransactionDao
+import com.ivy.data.repository.TransactionRepository
 import com.ivy.design.l0_system.Blue
 import com.ivy.design.l0_system.Blue3
 import com.ivy.design.l0_system.Gradient
@@ -25,14 +25,14 @@ import javax.inject.Inject
 
 @Deprecated("Legacy code")
 class CustomerJourneyCardsProvider @Inject constructor(
-    private val transactionDao: TransactionDao,
+    private val transactionRepository: TransactionRepository,
     private val plannedPaymentRuleDao: PlannedPaymentRuleDao,
     private val sharedPrefs: SharedPrefs,
     private val ivyContext: IvyWalletCtx
 ) {
 
     suspend fun loadCards(): List<CustomerJourneyCardModel> {
-        val trnCount = transactionDao.countHappenedTransactions()
+        val trnCount = transactionRepository.countHappenedTransactions().value
         val plannedPaymentsCount = plannedPaymentRuleDao.countPlannedPayments()
 
         return ACTIVE_CARDS
@@ -55,17 +55,26 @@ class CustomerJourneyCardsProvider @Inject constructor(
 
     companion object {
         val ACTIVE_CARDS = listOf(
+            shutdownCard(),
             adjustBalanceCard(),
             addPlannedPaymentCard(),
             didYouKnow_pinAddTransactionWidgetCard(),
             didYouKnow_expensesPieChart(),
-            rateUsCard(),
-            shareIvyWalletCard(),
-            joinIvyTelegramCard(),
-            rateUsCard_2(),
-            joinTelegram2(),
-            ivyWalletIsOpenSource(),
-            bugsApology(),
+        )
+
+        @Suppress("MaxLineLength", "NoImplicitFunctionReturnType")
+        fun shutdownCard() = CustomerJourneyCardModel(
+            id = "shutdown",
+            condition = { _, _, _ -> true },
+            title = "Important Notice: App No Longer Maintained",
+            description = "As of Nov 5th 2024, Ivy Wallet is no longer maintained by the original developers. You may continue to use the app, but it will no longer receive updates, bug fixes, or support, and it may stop functioning at some point.",
+            cta = "Learn More",
+            ctaIcon = R.drawable.github_logo,
+            background = Gradient.solid(Red),
+            hasDismiss = true,
+            onAction = { _, _, ivyActivity ->
+                ivyActivity.openUrlInBrowser(Constants.URL_IVY_WALLET_REPO)
+            }
         )
 
         fun adjustBalanceCard() = CustomerJourneyCardModel(

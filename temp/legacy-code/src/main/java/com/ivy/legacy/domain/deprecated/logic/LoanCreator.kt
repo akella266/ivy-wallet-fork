@@ -32,6 +32,7 @@ class LoanCreator @Inject constructor(
                     type = data.type,
                     color = data.color.toArgb(),
                     icon = data.icon,
+                    note = data.note,
                     orderNum = dao.findMaxOrderNum().nextOrderNum(),
                     isSynced = false,
                     accountId = data.account?.id,
@@ -78,7 +79,7 @@ class LoanCreator @Inject constructor(
     ) {
         try {
             ioThread {
-                loanWriter.flagDeleted(item.id)
+                loanWriter.deleteById(item.id)
             }
 
             onRefreshUI()

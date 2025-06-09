@@ -12,10 +12,10 @@ import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.legacy.stringRes
 import com.ivy.base.model.TransactionType
+import com.ivy.base.time.TimeConverter
+import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.AccountDao
-import com.ivy.data.db.dao.write.WriteCategoryDao
 import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
-import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
@@ -25,8 +25,10 @@ import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TagRepository
+import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.design.l0_system.RedLight
+import com.ivy.domain.features.Features
 import com.ivy.frp.then
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.data.model.TimePeriod
@@ -62,7 +64,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import com.ivy.legacy.datamodel.Account as LegacyAccount
@@ -89,11 +90,13 @@ class TransactionsViewModel @Inject constructor(
     private val calcAccIncomeExpenseAct: CalcAccIncomeExpenseAct,
     private val calcTrnsIncomeExpenseAct: LegacyCalcTrnsIncomeExpenseAct,
     private val exchangeAct: ExchangeAct,
-    private val transactionWriter: WriteTransactionDao,
-    private val categoryWriter: WriteCategoryDao,
+    private val transactionRepository: TransactionRepository,
     private val plannedPaymentRuleWriter: WritePlannedPaymentRuleDao,
     private val transactionMapper: TransactionMapper,
     private val tagRepository: TagRepository,
+    private val timeProvider: TimeProvider,
+    private val timeConverter: TimeConverter,
+    private val features: Features
 ) : ComposeViewModel<TransactionsState, TransactionsEvent>() {
 
     private val period = mutableStateOf(ivyContext.selectedPeriod)
@@ -160,8 +163,14 @@ class TransactionsViewModel @Inject constructor(
             enableDeletionButton = getEnableDeletionButton(),
             skipAllModalVisible = getSkipAllModalVisible(),
             deleteModal1Visible = getDeleteModal1Visible(),
-            choosePeriodModal = getChoosePeriodModal()
+            choosePeriodModal = getChoosePeriodModal(),
+            showAccountColorsInTransactions = getShouldShowAccountSpecificColorInTransactions()
         )
+    }
+
+    @Composable
+    fun getShouldShowAccountSpecificColorInTransactions(): Boolean {
+        return features.showAccountColorsInTransactions.asEnabledState()
     }
 
     @Composable
@@ -331,7 +340,7 @@ class TransactionsViewModel @Inject constructor(
             accountDao.findById(accountId)?.toLegacyDomain() ?: error("account not found")
         }
         account.value = initialAccount
-        val range = period.value.toRange(ivyContext.startDayOfMonth)
+        val range = period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
 
         if (initialAccount.currency.isNotNullOrBlank()) {
             currency.value = initialAccount.currency!!
@@ -431,7 +440,7 @@ class TransactionsViewModel @Inject constructor(
             categoryRepository.findById(CategoryId(categoryId)) ?: error("category not found")
         }
         category.value = initialCategory
-        val range = period.value.toRange(ivyContext.startDayOfMonth)
+        val range = period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
 
         balance.doubleValue = ioThread {
             categoryLogic.calculateCategoryBalance(initialCategory, range, accountFilterSet)
@@ -500,7 +509,8 @@ class TransactionsViewModel @Inject constructor(
                 categoryRepository.findById(CategoryId(categoryId)) ?: error("category not found")
             }
             category.value = initialCategory
-            val range = period.value.toRange(ivyContext.startDayOfMonth)
+            val range =
+                period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
 
             val incomeTrans = transactions.filter {
                 it.categoryId == categoryId && it.type == TransactionType.INCOME
@@ -574,7 +584,7 @@ class TransactionsViewModel @Inject constructor(
     }
 
     private suspend fun initForUnspecifiedCategory() {
-        val range = period.value.toRange(ivyContext.startDayOfMonth)
+        val range = period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
 
         balance.doubleValue = ioThread {
             categoryLogic.calculateUnspecifiedBalance(range)
@@ -627,9 +637,7 @@ class TransactionsViewModel @Inject constructor(
             color = ColorInt(RedLight.toArgb()),
             icon = IconAsset.unsafe("transfer"),
             id = CategoryId(UUID.randomUUID()),
-            lastUpdated = Instant.EPOCH,
             orderNum = 0.0,
-            removed = false,
         )
         category.value = accountTransferCategory
         val accountFilterIdSet = accountFilterList.toHashSet()
@@ -728,8 +736,8 @@ class TransactionsViewModel @Inject constructor(
 
     private suspend fun deleteAccount(accountId: UUID) {
         ioThread {
-            transactionWriter.flagDeletedByAccountId(accountId = accountId)
-            plannedPaymentRuleWriter.flagDeletedByAccountId(accountId = accountId)
+            transactionRepository.deleteAllByAccountId(accountId = AccountId(accountId))
+            plannedPaymentRuleWriter.deletedByAccountId(accountId = accountId)
             accountRepository.deleteById(AccountId(accountId))
 
             nav.back()
@@ -738,7 +746,6 @@ class TransactionsViewModel @Inject constructor(
 
     private suspend fun deleteCategory(categoryId: UUID) {
         ioThread {
-            categoryWriter.flagDeleted(categoryId)
             categoryRepository.deleteById(CategoryId(categoryId))
 
             nav.back()

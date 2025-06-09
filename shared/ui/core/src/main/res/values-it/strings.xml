@@ -25,7 +25,9 @@
     <string name="app_budget">%1$s %2$s budget dell\'app</string>
     <string name="budget_info_both">Informazioni sul budget: %1$s / %2$s</string>
     <string name="budget_info">Info sul budget %1$s%2$s</string>
+    <string name="total_budget_info">Budget rimanente totale: %1$s %2$s</string>
     <string name="add_category">Aggiungi categoria</string>
+    <string name="add_manual_exchange_rate">Add rate</string>
     <string name="expenses">Uscite</string>
     <string name="expenses_count">Numero uscite</string>
     <string name="income">Entrate</string>
@@ -448,7 +450,7 @@
     <string name="decrease_loan">Diminuzione</string>
     <string name="msg_select_account_to_transfer">Seleziona la destinazione del trasferimento</string>
     <string name="msg_source_account_destination_account_same_for_transfer">Selezionare un altro conto come destinazione per il trasferimento</string>
-    <string name="others_optional">Altro (opzionale)</string>
+    <string name="tags_optional">Tags (optional)</string>
     <string name="tags">Etichette</string>
     <string name="search_tags">Tag di Ricerca</string>
     <string name="exchange_rates">Tassi di cambio</string>
@@ -480,4 +482,6 @@
     <string name="your_data_will_be_saved_only_locally">I tuoi dati saranno salvati localmente sul tuo dispositivo. Rischi di perdere i tuoi dati se disinstalli l\'app o se cambi dispositivo. Per prevenire perdite di dati, raccomandiamo di esportare regolarmente un backup dalle impostazioni.</string>
     <string name="you_owe">Sei in debito di: %1$s</string>
     <string name="you_are_owed">Ti sono dovuti %1$s</string>
+    <string name="language">Lingua</string>
+    <string name="budget_exceeded_info">Budget superato di %1$s %2$s</string>
 </resources>

@@ -28,6 +28,9 @@ import com.ivy.base.legacy.Theme
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.legacy.stringRes
+import com.ivy.design.api.LocalTimeConverter
+import com.ivy.design.api.LocalTimeFormatter
+import com.ivy.design.api.LocalTimeProvider
 import com.ivy.frp.forward
 import com.ivy.frp.then2
 import com.ivy.home.Constants.SWIPE_HORIZONTAL_THRESHOLD
@@ -157,7 +160,7 @@ fun BoxWithConstraintsScope.HomeUi(
         HomeLazyColumn(
             hideBalance = uiState.hideBalance,
             hideIncome = uiState.hideIncome,
-            onSetExpanded = {
+            onSetExpand = {
                 onEvent(HomeEvent.SetExpanded(it))
             },
             balance = uiState.balance,
@@ -186,6 +189,7 @@ fun BoxWithConstraintsScope.HomeUi(
             history = uiState.history,
 
             customerJourneyCards = uiState.customerJourneyCards,
+            shouldShowAccountSpecificColorInTransactions = uiState.shouldShowAccountSpecificColorInTransactions,
 
             onPayOrGet = forward<Transaction>() then2 {
                 HomeEvent.PayOrGetPlanned(it)
@@ -281,11 +285,12 @@ fun BoxWithConstraintsScope.HomeUi(
 fun HomeLazyColumn(
     hideBalance: Boolean,
     hideIncome: Boolean,
-    onSetExpanded: (Boolean) -> Unit,
+    onSetExpand: (Boolean) -> Unit,
     listState: LazyListState,
     period: TimePeriod,
 
     baseData: AppBaseData,
+    shouldShowAccountSpecificColorInTransactions: Boolean,
 
     upcoming: LegacyDueSection,
     overdue: LegacyDueSection,
@@ -318,12 +323,15 @@ fun HomeLazyColumn(
                 available: Offset,
                 source: NestedScrollSource
             ): Offset {
-                onSetExpanded(listState.firstVisibleItemScrollOffset == 0)
+                onSetExpand(listState.firstVisibleItemScrollOffset == 0)
                 return super.onPostScroll(consumed, available, source)
             }
         }
     }
 
+    val timeProvider = LocalTimeProvider.current
+    val timeConverter = LocalTimeConverter.current
+    val timeFormatter = LocalTimeFormatter.current
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -373,8 +381,14 @@ fun HomeLazyColumn(
             emptyStateTitle = stringRes(R.string.no_transactions),
             emptyStateText = stringRes(
                 R.string.no_transactions_description,
-                period.toDisplayLong(ivyContext.startDayOfMonth)
+                period.toDisplayLong(
+                    startDateOfMonth = ivyContext.startDayOfMonth,
+                    timeProvider = timeProvider,
+                    timeConverter = timeConverter,
+                    timeFormatter = timeFormatter,
+                )
             ),
+            shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
             onSkipTransaction = onSkipTransaction,
             onSkipAllTransactions = onSkipAllTransactions
         )
@@ -417,7 +431,8 @@ private fun BoxWithConstraintsScope.PreviewHomeTab(isDark: Boolean = false) {
                 period = TimePeriod(month = Month.monthsList().first(), year = 2023),
                 hideBalance = false,
                 hideIncome = false,
-                expanded = false
+                expanded = false,
+                shouldShowAccountSpecificColorInTransactions = false
             ),
             onEvent = {}
         )

@@ -11,8 +11,8 @@ import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.boolean
 import io.kotest.property.arbitrary.double
 import io.kotest.property.arbitrary.filter
+import io.kotest.property.arbitrary.instant
 import io.kotest.property.arbitrary.int
-import io.kotest.property.arbitrary.localDateTime
 import io.kotest.property.arbitrary.negativeDouble
 import io.kotest.property.arbitrary.of
 import io.kotest.property.arbitrary.string
@@ -68,11 +68,14 @@ fun Arb.Companion.validTransfer(): Arb<TransactionEntity> = arbitrary {
         toAmount = Arb.maybe(Arb.positiveDoubleExact()).bind()?.value,
         title = Arb.maybe(Arb.string()).bind(),
         description = Arb.maybe(Arb.string()).bind(),
-        dateTime = Arb.localDateTime().bind().takeIf {
+        dateTime = Arb.instant().bind().takeIf {
             !isPlannedPayment || Arb.boolean().bind()
         },
-        dueDate = Arb.localDateTime().bind().takeIf {
+        dueDate = Arb.instant().bind().takeIf {
             isPlannedPayment || Arb.boolean().bind()
+        },
+        paidForDateTime = Arb.instant().bind().takeIf {
+            !isPlannedPayment || Arb.boolean().bind()
         },
         categoryId = Arb.maybe(Arb.uuid()).bind(),
         recurringRuleId = Arb.maybe(Arb.uuid()).bind(),
@@ -80,7 +83,7 @@ fun Arb.Companion.validTransfer(): Arb<TransactionEntity> = arbitrary {
         loanId = Arb.maybe(Arb.uuid()).bind(),
         loanRecordId = Arb.maybe(Arb.uuid()).bind(),
         isSynced = Arb.boolean().bind(),
-        isDeleted = Arb.boolean().bind(),
+        isDeleted = false,
         id = Arb.uuid().bind()
     )
 }
@@ -122,11 +125,14 @@ fun Arb.Companion.validIncomeOrExpense(): Arb<TransactionEntity> = arbitrary {
         toAmount = Arb.maybe(Arb.double()).bind(),
         title = Arb.maybe(Arb.string()).bind(),
         description = Arb.maybe(Arb.string()).bind(),
-        dateTime = Arb.localDateTime().bind().takeIf {
+        dateTime = Arb.instant().bind().takeIf {
             !isPlannedPayment || Arb.boolean().bind()
         },
-        dueDate = Arb.localDateTime().bind().takeIf {
+        dueDate = Arb.instant().bind().takeIf {
             isPlannedPayment || Arb.boolean().bind()
+        },
+        paidForDateTime = Arb.instant().bind().takeIf {
+            !isPlannedPayment || Arb.boolean().bind()
         },
         categoryId = Arb.maybe(Arb.uuid()).bind(),
         recurringRuleId = Arb.maybe(Arb.uuid()).bind(),
@@ -134,7 +140,7 @@ fun Arb.Companion.validIncomeOrExpense(): Arb<TransactionEntity> = arbitrary {
         loanId = Arb.maybe(Arb.uuid()).bind(),
         loanRecordId = Arb.maybe(Arb.uuid()).bind(),
         isSynced = Arb.boolean().bind(),
-        isDeleted = Arb.boolean().bind(),
+        isDeleted = false,
         id = Arb.uuid().bind()
     )
 }

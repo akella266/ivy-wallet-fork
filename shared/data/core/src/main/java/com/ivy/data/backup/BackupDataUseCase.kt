@@ -16,6 +16,8 @@ import com.ivy.data.db.dao.read.LoanDao
 import com.ivy.data.db.dao.read.LoanRecordDao
 import com.ivy.data.db.dao.read.PlannedPaymentRuleDao
 import com.ivy.data.db.dao.read.SettingsDao
+import com.ivy.data.db.dao.read.TagAssociationDao
+import com.ivy.data.db.dao.read.TagDao
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.WriteBudgetDao
 import com.ivy.data.db.dao.write.WriteCategoryDao
@@ -23,6 +25,8 @@ import com.ivy.data.db.dao.write.WriteLoanDao
 import com.ivy.data.db.dao.write.WriteLoanRecordDao
 import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
 import com.ivy.data.db.dao.write.WriteSettingsDao
+import com.ivy.data.db.dao.write.WriteTagAssociationDao
+import com.ivy.data.db.dao.write.WriteTagDao
 import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.file.FileSystem
 import com.ivy.data.repository.AccountRepository
@@ -35,6 +39,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.io.File
+import java.io.FileOutputStream
 import java.util.UUID
 import javax.inject.Inject
 
@@ -48,11 +53,11 @@ class BackupDataUseCase @Inject constructor(
     private val plannedPaymentRuleDao: PlannedPaymentRuleDao,
     private val settingsDao: SettingsDao,
     private val transactionDao: TransactionDao,
+    private val transactionWriter: WriteTransactionDao,
     private val sharedPrefs: SharedPrefs,
     private val accountRepository: AccountRepository,
     private val accountMapper: AccountMapper,
     private val categoryWriter: WriteCategoryDao,
-    private val transactionWriter: WriteTransactionDao,
     private val settingsWriter: WriteSettingsDao,
     private val budgetWriter: WriteBudgetDao,
     private val loanWriter: WriteLoanDao,
@@ -64,6 +69,10 @@ class BackupDataUseCase @Inject constructor(
     private val dispatchersProvider: DispatchersProvider,
     private val fileSystem: FileSystem,
     private val dataObserver: DataObserver,
+    private val tagsReader: TagDao,
+    private val tagAssociationReader: TagAssociationDao,
+    private val tagsWriter: WriteTagDao,
+    private val tagAssociationWriter: WriteTagAssociationDao
 ) {
     suspend fun exportToFile(
         zipFileUri: Uri
@@ -80,7 +89,7 @@ class BackupDataUseCase @Inject constructor(
         val outputDir = context.cacheDir
 
         val file = File.createTempFile(fileNamePrefix, fileNameSuffix, outputDir)
-        file.writeText(jsonString, Charsets.UTF_16)
+        FileOutputStream(file).use { it.write(jsonString.toByteArray(Charsets.UTF_16)) }
 
         return file
     }
@@ -97,6 +106,8 @@ class BackupDataUseCase @Inject constructor(
             val settings = async { settingsDao.findAll() }
             val transactions = async { transactionDao.findAll() }
             val sharedPrefs = async { getSharedPrefsData() }
+            val tags = async { tagsReader.findAll() }
+            val tagAssociations = async { tagAssociationReader.findAll() }
 
             val completeData = IvyWalletCompleteData(
                 accounts = accounts.await(),
@@ -107,7 +118,9 @@ class BackupDataUseCase @Inject constructor(
                 plannedPaymentRules = plannedPaymentRules.await(),
                 settings = settings.await(),
                 transactions = transactions.await(),
-                sharedPrefs = sharedPrefs.await()
+                sharedPrefs = sharedPrefs.await(),
+                tags = tags.await(),
+                tagAssociations = tagAssociations.await()
             )
 
             json.encodeToString(completeData)
@@ -262,6 +275,9 @@ class BackupDataUseCase @Inject constructor(
 
             onProgress(0.8)
 
+            val tags = async { tagsWriter.save(completeData.tags) }
+            val tagAssociations = async { tagAssociationWriter.save(completeData.tagAssociations) }
+
             val plannedPayments =
                 async { plannedPaymentRuleWriter.saveMany(completeData.plannedPaymentRules) }
             val settings = async {
@@ -294,6 +310,8 @@ class BackupDataUseCase @Inject constructor(
 
             plannedPayments.await()
             settings.await()
+            tags.await()
+            tagAssociations.await()
 
             onProgress(0.9)
         }

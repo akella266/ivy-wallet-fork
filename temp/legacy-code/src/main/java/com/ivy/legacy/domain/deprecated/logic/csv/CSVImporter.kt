@@ -4,11 +4,11 @@ import androidx.compose.ui.graphics.toArgb
 import arrow.core.raise.either
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
+import com.ivy.base.time.TimeConverter
 import com.ivy.data.backup.CSVRow
 import com.ivy.data.backup.ImportResult
 import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.read.SettingsDao
-import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.primitive.ColorInt
@@ -17,6 +17,8 @@ import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.CurrencyRepository
+import com.ivy.data.repository.TransactionRepository
+import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.design.IVY_COLOR_PICKER_COLORS_FREE
 import com.ivy.design.l0_system.Green
 import com.ivy.design.l0_system.IvyDark
@@ -34,7 +36,6 @@ import com.opencsv.validators.RowValidator
 import kotlinx.collections.immutable.persistentListOf
 import timber.log.Timber
 import java.io.StringReader
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -47,9 +48,11 @@ class CSVImporter @Inject constructor(
     private val settingsDao: SettingsDao,
     private val accountDao: AccountDao,
     private val categoryRepository: CategoryRepository,
-    private val writeTransactionDao: WriteTransactionDao,
+    private val transactionRepository: TransactionRepository,
+    private val transactionMapper: TransactionMapper,
     private val accountRepository: AccountRepository,
     private val currencyRepository: CurrencyRepository,
+    private val timeConverter: TimeConverter,
 ) {
 
     lateinit var accounts: List<LegacyAccount>
@@ -140,7 +143,11 @@ class CSVImporter @Inject constructor(
                 0.0
             }
             onProgress(0.5 + progressPercent / 2)
-            writeTransactionDao.save(transaction.toEntity())
+            with(transactionMapper) {
+                transaction.toEntity().toDomain().getOrNull()?.let {
+                    transactionRepository.save(it)
+                }
+            }
         }
 
         return ImportResult(
@@ -238,8 +245,8 @@ class CSVImporter @Inject constructor(
                 accountId = account.id,
                 toAccountId = toAccount?.id,
                 toAmount = toAmount?.toBigDecimal() ?: amount.toBigDecimal(),
-                dateTime = dateTime,
-                dueDate = dueDate,
+                dateTime = with(timeConverter) { dateTime?.toUTC() },
+                dueDate = with(timeConverter) { dueDate?.toUTC() },
                 categoryId = category?.id?.value,
                 title = title,
                 description = description
@@ -520,8 +527,6 @@ class CSVImporter @Inject constructor(
                 icon = icon?.let(IconAsset::from)?.getOrNull(),
                 orderNum = orderNum ?: categoryRepository.findMaxOrderNum().nextOrderNum(),
                 id = CategoryId(UUID.randomUUID()),
-                lastUpdated = Instant.EPOCH,
-                removed = false,
             )
         }.getOrNull()
 

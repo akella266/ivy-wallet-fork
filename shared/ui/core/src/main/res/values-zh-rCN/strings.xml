@@ -25,7 +25,9 @@
     <string name="app_budget">%1$s %2$s 应用预算</string>
     <string name="budget_info_both">预算：%1$s / %2$s</string>
     <string name="budget_info">预算：%1$s%2$s</string>
+    <string name="total_budget_info">剩余总预算：%1$s %2$s</string>
     <string name="add_category">添加类别</string>
+    <string name="add_manual_exchange_rate">Add rate</string>
     <string name="expenses">支出</string>
     <string name="expenses_count">支出次数</string>
     <string name="income">收入</string>
@@ -448,7 +450,7 @@
     <string name="decrease_loan">减少</string>
     <string name="msg_select_account_to_transfer">选择转账目标账户</string>
     <string name="msg_source_account_destination_account_same_for_transfer">请选择不同的目标账户进行转账</string>
-    <string name="others_optional">其他（可选）</string>
+    <string name="tags_optional">Tags (optional)</string>
     <string name="tags">标签</string>
     <string name="search_tags">搜索标签</string>
     <string name="exchange_rates">汇率</string>
@@ -456,7 +458,7 @@
     <string name="this_transaction_is_associated_with_loan">* 此交易与贷款关联：%1$s</string>
     <string name="this_transaction_is_associated_with_loan_record">* 此交易与贷款记录关联：%1$s</string>
     <string name="note_transaction_associated_with_loan_record_of_loan">注意：此交易与贷款记录关联：%1$s\n您正在尝试将贷款记录关联的账户更改为不同货币的账户\n贷款记录将根据当天的汇率重新计算</string>
-    <string name="note_you_are_trying_to_change_the_account_associated_with_the_loan">注意：您正在尝试将贷款关联的账户更改为不同货币的账户\n所有贷款记录将根据当天的汇率重新计算</string>
+    <string name="note_you_are_trying_to_change_the_account_associated_with_the_loan">注意：您正在尝试将贷款 %s 关联的账户更改为不同货币的账户\n所有贷款记录将根据当天的汇率重新计算</string>
     <string name="attributions">第三方代码</string>
     <string name="icons">图标</string>
     <string name="fonts">字体</string>
@@ -487,4 +489,6 @@
     <string name="import_csv_continue">继续</string>
     <string name="warning_import_csv_file">"\n!!!⚠️警告：导入可能会导致交易重复！！！\n重复的交易无法轻松删除，您需要手动删除每一笔重复的交易！\n原因：我们无法解析交易 ID，因为 Ivy Wallet 仅使用 UUID，而其他应用程序不使用。\n如果您是从头开始的，不用担心-请忽略此消息。"</string>
     <string name="select_tags">选择标签</string>
+    <string name="language">语言</string>
+    <string name="budget_exceeded_info">预算超出 %1$s %2$s</string>
 </resources>

@@ -1,7 +1,6 @@
 package com.ivy.legacy
 
 import android.net.Uri
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +84,7 @@ class IvyWalletCtx @Inject constructor() : IvyContext() {
     var accountsListState: LazyListState? = null
 
     @Deprecated("Legacy code. Don't use it, please.")
-    var loansScrollState: ScrollState = ScrollState(0)
+    var loanListState: LazyListState? = null
 
     @Deprecated("Legacy code. Don't use it, please.")
     var mainTab by mutableStateOf(com.ivy.legacy.data.model.MainTab.HOME)
@@ -114,7 +113,10 @@ class IvyWalletCtx @Inject constructor() : IvyContext() {
         initialDate: LocalDate?,
         onDatePicked: (LocalDate) -> Unit
     ) -> Unit
-    lateinit var onShowTimePicker: (onDatePicked: (LocalTime) -> Unit) -> Unit
+    lateinit var onShowTimePicker: (
+        initialTime: LocalTime?,
+        onDatePicked: (LocalTime) -> Unit
+    ) -> Unit
 
     @Deprecated("Legacy code. Don't use it, please.")
     fun datePicker(
@@ -127,8 +129,11 @@ class IvyWalletCtx @Inject constructor() : IvyContext() {
     }
 
     @Deprecated("Legacy code. Don't use it, please.")
-    fun timePicker(onTimePicked: (LocalTime) -> Unit) {
-        onShowTimePicker(onTimePicked)
+    fun timePicker(
+        initialTime: LocalTime?,
+        onTimePicked: (LocalTime) -> Unit
+    ) {
+        onShowTimePicker(initialTime, onTimePicked)
     }
     // Activity help -------------------------------------------------------------------------------
 

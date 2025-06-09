@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -34,6 +35,7 @@ import com.ivy.base.model.TransactionType
 import com.ivy.data.model.Category
 import com.ivy.data.model.Tag
 import com.ivy.data.model.TagId
+import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.l0_system.Orange
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
@@ -42,11 +44,10 @@ import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.data.EditTransactionDisplayLoan
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.ivyWalletCtx
-import com.ivy.legacy.rootView
 import com.ivy.legacy.ui.component.edit.TransactionDateTime
+import com.ivy.legacy.ui.component.edit.core.Description
 import com.ivy.legacy.ui.component.tags.AddTagButton
 import com.ivy.legacy.ui.component.tags.ShowTagModal
-import com.ivy.legacy.utils.convertUTCtoLocal
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.EditTransactionScreen
@@ -55,10 +56,10 @@ import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.CustomExchangeRateState
+import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import com.ivy.wallet.domain.deprecated.logic.model.CreateCategoryData
 import com.ivy.wallet.ui.edit.core.Category
-import com.ivy.legacy.ui.component.edit.core.Description
 import com.ivy.wallet.ui.edit.core.DueDate
 import com.ivy.wallet.ui.edit.core.EditBottomSheet
 import com.ivy.wallet.ui.edit.core.Title
@@ -82,9 +83,9 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
-import java.time.LocalDate
+import java.time.Instant
 import java.time.LocalDateTime
-import java.time.LocalTime
+import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -98,7 +99,7 @@ fun BoxWithConstraintsScope.EditTransactionScreen(screen: EditTransactionScreen)
         viewModel.start(screen)
     }
 
-    val view = rootView()
+    val view = LocalView.current
 
     UI(
         screen = screen,
@@ -123,59 +124,62 @@ fun BoxWithConstraintsScope.EditTransactionScreen(screen: EditTransactionScreen)
         transactionAssociatedTags = uiState.transactionAssociatedTags,
         hasChanges = uiState.hasChanges,
         onSetDate = {
-            viewModel.onEvent(EditTransactionEvent.OnSetDate(it))
+            viewModel.onEvent(EditTransactionViewEvent.OnChangeDate)
         },
         onSetTime = {
-            viewModel.onEvent(EditTransactionEvent.OnSetTime(it))
+            viewModel.onEvent(EditTransactionViewEvent.OnChangeTime)
         },
-        onTitleChanged = {
-            viewModel.onEvent(EditTransactionEvent.OnTitleChanged(it))
+        onTitleChange = {
+            viewModel.onEvent(EditTransactionViewEvent.OnTitleChanged(it))
         },
-        onDescriptionChanged = {
-            viewModel.onEvent(EditTransactionEvent.OnDescriptionChanged(it))
+        onDescriptionChange = {
+            viewModel.onEvent(EditTransactionViewEvent.OnDescriptionChanged(it))
         },
-        onAmountChanged = {
-            viewModel.onEvent(EditTransactionEvent.OnAmountChanged(it))
+        onAmountChange = {
+            viewModel.onEvent(EditTransactionViewEvent.OnAmountChanged(it))
         },
-        onCategoryChanged = {
-            viewModel.onEvent(EditTransactionEvent.OnCategoryChanged(it))
+        onCategoryChange = {
+            viewModel.onEvent(EditTransactionViewEvent.OnCategoryChanged(it))
         },
-        onAccountChanged = {
-            viewModel.onEvent(EditTransactionEvent.OnAccountChanged(it))
+        onAccountChange = {
+            viewModel.onEvent(EditTransactionViewEvent.OnAccountChanged(it))
         },
-        onToAccountChanged = {
-            viewModel.onEvent(EditTransactionEvent.OnToAccountChanged(it))
+        onToAccountChange = {
+            viewModel.onEvent(EditTransactionViewEvent.OnToAccountChanged(it))
         },
-        onDueDateChanged = {
-            viewModel.onEvent(EditTransactionEvent.OnDueDateChanged(it))
+        onDueDateChange = {
+            viewModel.onEvent(EditTransactionViewEvent.OnDueDateChanged(it))
         },
         onSetTransactionType = {
-            viewModel.onEvent(EditTransactionEvent.OnSetTransactionType(it))
+            viewModel.onEvent(EditTransactionViewEvent.OnSetTransactionType(it))
         },
         onCreateCategory = {
-            viewModel.onEvent(EditTransactionEvent.CreateCategory(it))
+            viewModel.onEvent(EditTransactionViewEvent.CreateCategory(it))
         },
         onEditCategory = {
-            viewModel.onEvent(EditTransactionEvent.EditCategory(it))
+            viewModel.onEvent(EditTransactionViewEvent.EditCategory(it))
         },
         onPayPlannedPayment = {
-            viewModel.onEvent(EditTransactionEvent.OnPayPlannedPayment)
+            viewModel.onEvent(EditTransactionViewEvent.OnPayPlannedPayment)
         },
         onSave = {
             view.hideKeyboard()
-            viewModel.onEvent(EditTransactionEvent.Save(it))
+            viewModel.onEvent(EditTransactionViewEvent.Save(it))
         },
         onSetHasChanges = {
-            viewModel.onEvent(EditTransactionEvent.SetHasChanges(it))
+            viewModel.onEvent(EditTransactionViewEvent.SetHasChanges(it))
         },
         onDelete = {
-            viewModel.onEvent(EditTransactionEvent.Delete)
+            viewModel.onEvent(EditTransactionViewEvent.Delete)
+        },
+        onDuplicate = {
+            viewModel.onEvent(EditTransactionViewEvent.Duplicate)
         },
         onCreateAccount = {
-            viewModel.onEvent(EditTransactionEvent.CreateAccount(it))
+            viewModel.onEvent(EditTransactionViewEvent.CreateAccount(it))
         },
-        onExchangeRateChanged = {
-            viewModel.onEvent(EditTransactionEvent.UpdateExchangeRate(it))
+        onExchangeRateChange = {
+            viewModel.onEvent(EditTransactionViewEvent.UpdateExchangeRate(it))
         },
         onTagOperation = {
             viewModel.onEvent(it)
@@ -194,10 +198,10 @@ private fun BoxWithConstraintsScope.UI(
     titleSuggestions: ImmutableSet<String>,
     description: String?,
     category: Category?,
-    dateTime: LocalDateTime?,
+    dateTime: Instant?,
     account: Account?,
     toAccount: Account?,
-    dueDate: LocalDateTime?,
+    dueDate: Instant?,
     amount: Double,
 
     customExchangeRateState: CustomExchangeRateState,
@@ -205,15 +209,15 @@ private fun BoxWithConstraintsScope.UI(
     accounts: ImmutableList<Account>,
     tags: ImmutableList<Tag>,
     transactionAssociatedTags: ImmutableList<TagId>,
-    onTitleChanged: (String?) -> Unit,
-    onDescriptionChanged: (String?) -> Unit,
-    onAmountChanged: (Double) -> Unit,
-    onCategoryChanged: (Category?) -> Unit,
-    onAccountChanged: (Account) -> Unit,
-    onToAccountChanged: (Account) -> Unit,
-    onDueDateChanged: (LocalDateTime?) -> Unit,
-    onSetDate: (LocalDate) -> Unit,
-    onSetTime: (LocalTime) -> Unit,
+    onTitleChange: (String?) -> Unit,
+    onDescriptionChange: (String?) -> Unit,
+    onAmountChange: (Double) -> Unit,
+    onCategoryChange: (Category?) -> Unit,
+    onAccountChange: (Account) -> Unit,
+    onToAccountChange: (Account) -> Unit,
+    onDueDateChange: (LocalDateTime?) -> Unit,
+    onSetDate: () -> Unit,
+    onSetTime: () -> Unit,
     onSetTransactionType: (TransactionType) -> Unit,
 
     onCreateCategory: (CreateCategoryData) -> Unit,
@@ -222,9 +226,10 @@ private fun BoxWithConstraintsScope.UI(
     onSave: (closeScreen: Boolean) -> Unit,
     onSetHasChanges: (hasChanges: Boolean) -> Unit,
     onDelete: () -> Unit,
+    onDuplicate: () -> Unit,
     onCreateAccount: (CreateAccountData) -> Unit,
-    onExchangeRateChanged: (Double?) -> Unit = { },
-    onTagOperation: (EditTransactionEvent.TagEvent) -> Unit = {},
+    onExchangeRateChange: (Double?) -> Unit = { },
+    onTagOperation: (EditTransactionViewEvent.TagEvent) -> Unit = {},
     loanData: EditTransactionDisplayLoan = EditTransactionDisplayLoan(),
     backgroundProcessing: Boolean = false,
     hasChanges: Boolean = false,
@@ -289,7 +294,9 @@ private fun BoxWithConstraintsScope.UI(
             },
             onChangeTransactionTypeModal = {
                 changeTransactionTypeModalVisible = true
-            }
+            },
+            showDuplicateButton = true,
+            onDuplicate = onDuplicate
         )
 
         Spacer(Modifier.height(32.dp))
@@ -306,7 +313,7 @@ private fun BoxWithConstraintsScope.UI(
             suggestions = titleSuggestions,
             scrollState = scrollState,
 
-            onTitleChanged = onTitleChanged,
+            onTitleChanged = onTitleChange,
             onNext = {
                 when {
                     shouldFocusAmount(amount = amount) -> {
@@ -349,12 +356,15 @@ private fun BoxWithConstraintsScope.UI(
 
         val ivyContext = ivyWalletCtx()
 
+        val timeConverter = LocalTimeConverter.current
         if (dueDate != null) {
             DueDate(dueDate = dueDate) {
                 ivyContext.datePicker(
-                    initialDate = dueDate.toLocalDate()
+                    initialDate = with(timeConverter) {
+                        dueDate.toLocalDate()
+                    }
                 ) {
-                    onDueDateChanged(it.atTime(12, 0))
+                    onDueDateChange(it.atTime(12, 0))
                 }
             }
 
@@ -367,17 +377,12 @@ private fun BoxWithConstraintsScope.UI(
             onEditDescription = { descriptionModalVisible = true }
         )
 
-        TransactionDateTime(dateTime = dateTime, dueDateTime = dueDate, onEditDate = {
-            ivyContext.datePicker(
-                initialDate = dateTime?.convertUTCtoLocal()?.toLocalDate()
-            ) { date ->
-                onSetDate((date))
-            }
-        }, onEditTime = {
-            ivyContext.timePicker { time ->
-                onSetTime(time)
-            }
-        })
+        TransactionDateTime(
+            dateTime = dateTime,
+            dueDateTime = dueDate,
+            onEditDate = onSetDate,
+            onEditTime = onSetTime,
+        )
 
         if (transactionType == TransactionType.TRANSFER && customExchangeRateState.showCard) {
             Spacer(Modifier.height(12.dp))
@@ -387,7 +392,7 @@ private fun BoxWithConstraintsScope.UI(
                 exchangeRate = customExchangeRateState.exchangeRate,
                 onRefresh = {
                     // Set exchangeRate to null to reset
-                    onExchangeRateChanged(null)
+                    onExchangeRateChange(null)
                 },
                 modifier = Modifier.onGloballyPositioned { coordinates ->
                     customExchangeRatePosition = coordinates.positionInParent().y * 0.3f
@@ -486,7 +491,7 @@ private fun BoxWithConstraintsScope.UI(
         },
 
         onAmountChanged = {
-            onAmountChanged(it)
+            onAmountChange(it)
             if (shouldFocusCategory(category)) {
                 chooseCategoryModalVisible = true
             } else if (shouldFocusTitle(titleTextFieldValue, transactionType)) {
@@ -498,10 +503,10 @@ private fun BoxWithConstraintsScope.UI(
                 selectedAcc = it
                 accountChangeModal = true
             } else {
-                onAccountChanged(it)
+                onAccountChange(it)
             }
         },
-        onToAccountChanged = onToAccountChanged,
+        onToAccountChanged = onToAccountChange,
         onAddNewAccount = {
             accountModalData = AccountModalData(
                 account = null, baseCurrency = baseCurrency, balance = 0.0
@@ -516,7 +521,7 @@ private fun BoxWithConstraintsScope.UI(
         categories = categories,
         showCategoryModal = { categoryModalData = CategoryModalData(it) },
         onCategoryChanged = {
-            onCategoryChanged(it)
+            onCategoryChange(it)
             if (shouldFocusTitle(titleTextFieldValue, transactionType)) {
                 titleFocus.requestFocus()
             } else if (shouldFocusAmount(amount = amount)) {
@@ -547,7 +552,7 @@ private fun BoxWithConstraintsScope.UI(
     DescriptionModal(
         visible = descriptionModalVisible,
         description = description,
-        onDescriptionChanged = onDescriptionChanged,
+        onDescriptionChanged = onDescriptionChange,
         dismiss = {
             descriptionModalVisible = false
         }
@@ -583,7 +588,7 @@ private fun BoxWithConstraintsScope.UI(
             accountChangeModal = false
         }
     ) {
-        selectedAcc?.let { onAccountChanged(it) }
+        selectedAcc?.let { onAccountChange(it) }
         accountChangeModal = false
     }
 
@@ -599,9 +604,11 @@ private fun BoxWithConstraintsScope.UI(
         currency = "",
         initialAmount = customExchangeRateState.exchangeRate,
         dismiss = { exchangeRateAmountModalShown = false },
-        decimalCountMax = 4,
+        decimalCountMax = IvyCurrency.getDecimalPlaces(
+            customExchangeRateState.toCurrencyCode ?: baseCurrency
+        ),
         onAmountChanged = {
-            onExchangeRateChanged(it)
+            onExchangeRateChange(it)
         }
     )
 
@@ -610,27 +617,27 @@ private fun BoxWithConstraintsScope.UI(
         onDismiss = {
             tagModelVisible = false
             // Reset TagList, avoids showing incorrect tag list when user has searched for a tag
-            onTagOperation(EditTransactionEvent.TagEvent.OnTagSearch(""))
+            onTagOperation(EditTransactionViewEvent.TagEvent.OnTagSearch(""))
         },
         allTagList = tags,
         selectedTagList = transactionAssociatedTags,
         onTagAdd = {
-            onTagOperation(EditTransactionEvent.TagEvent.SaveTag(name = it))
+            onTagOperation(EditTransactionViewEvent.TagEvent.SaveTag(name = it))
         },
         onTagEdit = { oldTag, newTag ->
-            onTagOperation(EditTransactionEvent.TagEvent.OnTagEdit(oldTag, newTag))
+            onTagOperation(EditTransactionViewEvent.TagEvent.OnTagEdit(oldTag, newTag))
         },
         onTagDelete = {
-            onTagOperation(EditTransactionEvent.TagEvent.OnTagDelete(it))
+            onTagOperation(EditTransactionViewEvent.TagEvent.OnTagDelete(it))
         },
         onTagSelected = {
-            onTagOperation(EditTransactionEvent.TagEvent.OnTagSelect(it))
+            onTagOperation(EditTransactionViewEvent.TagEvent.OnTagSelect(it))
         },
         onTagDeSelected = {
-            onTagOperation(EditTransactionEvent.TagEvent.OnTagDeSelect(it))
+            onTagOperation(EditTransactionViewEvent.TagEvent.OnTagDeSelect(it))
         },
         onTagSearch = {
-            onTagOperation(EditTransactionEvent.TagEvent.OnTagSearch(it))
+            onTagOperation(EditTransactionViewEvent.TagEvent.OnTagSearch(it))
         }
     )
 }
@@ -648,6 +655,7 @@ private fun shouldFocusAmount(amount: Double) = amount == 0.0
 
 /** For Preview purpose **/
 private val testDateTime = LocalDateTime.of(2023, 4, 27, 0, 35)
+    .toInstant(ZoneOffset.UTC)
 
 @ExperimentalFoundationApi
 @Preview
@@ -674,13 +682,13 @@ private fun BoxWithConstraintsScope.Preview(isDark: Boolean = false) {
             categories = persistentListOf(),
             accounts = persistentListOf(),
 
-            onDueDateChanged = {},
-            onCategoryChanged = {},
-            onAccountChanged = {},
-            onToAccountChanged = {},
-            onDescriptionChanged = {},
-            onTitleChanged = {},
-            onAmountChanged = {},
+            onDueDateChange = {},
+            onCategoryChange = {},
+            onAccountChange = {},
+            onToAccountChange = {},
+            onDescriptionChange = {},
+            onTitleChange = {},
+            onAmountChange = {},
 
             onCreateCategory = { },
             onEditCategory = {},
@@ -688,6 +696,7 @@ private fun BoxWithConstraintsScope.Preview(isDark: Boolean = false) {
             onSave = {},
             onSetHasChanges = {},
             onDelete = {},
+            onDuplicate = {},
             onCreateAccount = { },
             onSetDate = {},
             onSetTime = {},

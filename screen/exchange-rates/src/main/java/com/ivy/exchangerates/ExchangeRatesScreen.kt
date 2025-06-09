@@ -4,12 +4,9 @@ import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ivy.base.legacy.Theme
 import com.ivy.design.l0_system.UI
-import com.ivy.design.l0_system.White
 import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.ColumnRoot
 import com.ivy.design.l1_buildingBlocks.DividerW
@@ -36,6 +32,7 @@ import com.ivy.exchangerates.modal.AddRateModal
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ui.SearchInput
 import com.ivy.legacy.utils.selectEndTextFieldValue
+import com.ivy.navigation.navigation
 import com.ivy.wallet.ui.theme.modal.edit.AmountModal
 import kotlinx.collections.immutable.persistentListOf
 import java.util.UUID
@@ -56,6 +53,7 @@ private fun BoxWithConstraintsScope.UI(
     state: RatesState,
     onEvent: (RatesEvent) -> Unit,
 ) {
+    val nav = navigation()
     var amountModalVisible by remember {
         mutableStateOf(false)
     }
@@ -103,27 +101,12 @@ private fun BoxWithConstraintsScope.UI(
     var addRateModalVisible by remember {
         mutableStateOf(false)
     }
-    Button(
-        modifier = Modifier
-            .systemBarsPadding()
-            .align(Alignment.BottomCenter)
-            .padding(bottom = 24.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = UI.colors.primary,
-            contentColor = White,
-        ),
-        onClick = {
-            addRateModalVisible = true
-        }
-    ) {
-        Text(
-            modifier = Modifier.padding(vertical = 16.dp),
-            text = "Add rate",
-            style = UI.typo.b1.style(
-                color = White
-            )
-        )
-    }
+
+    ExchangeRatesBottomBar(
+        onClose = { nav.back() },
+        onAddRate = { addRateModalVisible = true }
+    )
+
     AddRateModal(
         visible = addRateModalVisible,
         baseCurrency = state.baseCurrency,
@@ -195,6 +178,7 @@ private fun SearchField(
         searchQueryTextFieldValue = searchQueryTextFieldValue,
         hint = "Search currency",
         focus = false,
+        showClearIcon = searchQueryTextFieldValue.text.isNotEmpty(),
         onSetSearchQueryTextField = {
             searchQueryTextFieldValue = it
             onSearch(it.text)

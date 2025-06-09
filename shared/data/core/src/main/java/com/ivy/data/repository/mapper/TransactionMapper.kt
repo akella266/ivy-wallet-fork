@@ -4,40 +4,42 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.raise.ensureNotNull
-import com.ivy.base.TimeProvider
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.entity.TransactionEntity
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.Expense
 import com.ivy.data.model.Income
+import com.ivy.data.model.PositiveValue
+import com.ivy.data.model.TagId
 import com.ivy.data.model.Transaction
 import com.ivy.data.model.TransactionId
 import com.ivy.data.model.TransactionMetadata
 import com.ivy.data.model.Transfer
-import com.ivy.data.model.PositiveValue
 import com.ivy.data.model.getFromAccount
 import com.ivy.data.model.getToAccount
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.model.primitive.PositiveDouble
-import com.ivy.data.model.TagId
 import com.ivy.data.repository.AccountRepository
 import java.time.Instant
 import javax.inject.Inject
 
 class TransactionMapper @Inject constructor(
     private val accountRepository: AccountRepository,
-    private val timeProvider: TimeProvider,
 ) {
 
     suspend fun TransactionEntity.toDomain(
         tags: List<TagId> = emptyList()
     ): Either<String, Transaction> = either {
+        ensure(!isDeleted) { "Transaction is deleted" }
+
         val metadata = TransactionMetadata(
             recurringRuleId = recurringRuleId,
+            paidForDateTime = paidForDateTime,
             loanId = loanId,
             loanRecordId = loanRecordId
         )
+
         val settled = dateTime != null
         val time = mapTime().bind()
 
@@ -66,9 +68,7 @@ class TransactionMapper @Inject constructor(
                     time = time,
                     settled = settled,
                     metadata = metadata,
-                    lastUpdated = Instant.EPOCH,
-                    removed = isDeleted,
-                    tags = tags
+                    tags = tags,
                 )
             }
 
@@ -83,9 +83,7 @@ class TransactionMapper @Inject constructor(
                     time = time,
                     settled = settled,
                     metadata = metadata,
-                    lastUpdated = Instant.EPOCH,
-                    removed = isDeleted,
-                    tags = tags
+                    tags = tags,
                 )
             }
 
@@ -118,26 +116,23 @@ class TransactionMapper @Inject constructor(
                     time = time,
                     settled = settled,
                     metadata = metadata,
-                    lastUpdated = Instant.EPOCH,
-                    removed = isDeleted,
                     fromAccount = accountId,
                     fromValue = fromValue,
                     toAccount = toAccountId,
                     toValue = toValue,
-                    tags = tags
+                    tags = tags,
                 )
             }
         }
     }
 
     private fun TransactionEntity.mapTime(): Either<String, Instant> = either {
-        val time = (dateTime ?: dueDate)?.atZone(timeProvider.getZoneId())?.toInstant()
+        val time = (dateTime ?: dueDate)
         ensureNotNull(time) { "Missing transaction time for entity: $this" }
         time
     }
 
     fun Transaction.toEntity(): TransactionEntity {
-        val dateTime = time.atZone(timeProvider.getZoneId()).toLocalDateTime()
         return TransactionEntity(
             accountId = getFromAccount().value,
             type = when (this) {
@@ -158,15 +153,16 @@ class TransactionMapper @Inject constructor(
             },
             title = title?.value,
             description = description?.value,
-            dateTime = dateTime.takeIf { settled },
+            dateTime = time.takeIf { settled },
             categoryId = category?.value,
-            dueDate = dateTime.takeIf { !settled },
+            dueDate = time.takeIf { !settled },
+            paidForDateTime = metadata.paidForDateTime,
             recurringRuleId = metadata.recurringRuleId,
             attachmentUrl = null,
             loanId = metadata.loanId,
             loanRecordId = metadata.loanRecordId,
             isSynced = true,
-            isDeleted = removed,
+            isDeleted = false,
             id = id.value
         )
     }

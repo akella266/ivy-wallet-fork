@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.LoanRecordType
 import com.ivy.base.model.TransactionType
+import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.read.LoanDao
 import com.ivy.data.db.dao.read.LoanRecordDao
@@ -11,30 +12,30 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.WriteLoanDao
 import com.ivy.data.db.dao.write.WriteLoanRecordDao
-import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.LoanType
+import com.ivy.data.model.TransactionId
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.CategoryRepository
+import com.ivy.data.repository.TransactionRepository
+import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.design.IVY_COLOR_PICKER_COLORS_FREE
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.Loan
 import com.ivy.legacy.datamodel.LoanRecord
+import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
-import com.ivy.legacy.datamodel.toEntity
 import com.ivy.legacy.utils.computationThread
 import com.ivy.legacy.utils.ioThread
-import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.wallet.domain.deprecated.logic.currency.ExchangeRatesLogic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.LocalDateTime
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -48,9 +49,11 @@ class LoanTransactionsCore @Inject constructor(
     private val settingsDao: SettingsDao,
     private val accountsDao: AccountDao,
     private val exchangeRatesLogic: ExchangeRatesLogic,
-    private val writeTransactionDao: WriteTransactionDao,
+    private val transactionRepo: TransactionRepository,
+    private val transactionMapper: TransactionMapper,
     private val writeLoanRecordDao: WriteLoanRecordDao,
     private val writeLoanDao: WriteLoanDao,
+    private val timeProvider: TimeProvider,
 ) {
     private var baseCurrencyCode: String? = null
 
@@ -110,7 +113,7 @@ class LoanTransactionsCore @Inject constructor(
         selectedAccountId: UUID?,
         title: String? = null,
         category: Category? = null,
-        time: LocalDateTime? = null,
+        time: Instant? = null,
         isLoanRecord: Boolean = false,
         transaction: Transaction? = null,
         loanRecordType: LoanRecordType
@@ -128,7 +131,7 @@ class LoanTransactionsCore @Inject constructor(
                 selectedAccountId = selectedAccountId,
                 title = title ?: transaction.title,
                 categoryId = category?.id?.value ?: transaction.categoryId,
-                time = time ?: transaction.dateTime ?: timeNowUTC(),
+                time = time ?: transaction.dateTime ?: timeProvider.utcNow(),
                 isLoanRecord = isLoanRecord,
                 transaction = transaction,
                 loanRecordType = loanRecordType
@@ -142,7 +145,7 @@ class LoanTransactionsCore @Inject constructor(
                 selectedAccountId = selectedAccountId,
                 title = title,
                 categoryId = category?.id?.value,
-                time = time ?: timeNowUTC(),
+                time = time ?: timeProvider.utcNow(),
                 isLoanRecord = isLoanRecord,
                 transaction = transaction,
                 loanRecordType = loanRecordType
@@ -160,7 +163,7 @@ class LoanTransactionsCore @Inject constructor(
         selectedAccountId: UUID?,
         title: String? = null,
         categoryId: UUID? = null,
-        time: LocalDateTime = timeNowUTC(),
+        time: Instant = timeProvider.utcNow(),
         isLoanRecord: Boolean = false,
         transaction: Transaction? = null,
         loanRecordType: LoanRecordType
@@ -197,14 +200,16 @@ class LoanTransactionsCore @Inject constructor(
             )
 
         ioThread {
-            writeTransactionDao.save(modifiedTransaction.toEntity())
+            modifiedTransaction.toDomain(transactionMapper)?.let {
+                transactionRepo.save(it)
+            }
         }
     }
 
     private suspend fun deleteTransaction(transaction: Transaction?) {
         ioThread {
             transaction?.let {
-                writeTransactionDao.flagDeleted(it.id)
+                transactionRepo.deleteById(TransactionId(it.id))
             }
         }
     }
@@ -230,9 +235,7 @@ class LoanTransactionsCore @Inject constructor(
                 color = ColorInt(IVY_COLOR_PICKER_COLORS_FREE[DEFAULT_COLOR_INDEX].toArgb()),
                 icon = IconAsset.unsafe("loan"),
                 id = CategoryId(UUID.randomUUID()),
-                lastUpdated = Instant.EPOCH,
                 orderNum = 0.0,
-                removed = false,
             )
         } else {
             null
@@ -276,7 +279,7 @@ class LoanTransactionsCore @Inject constructor(
                 }
 
                 reCalculateLoanAmount || loanRecordCurrenciesChanged ||
-                    oldLonRecordConvertedAmount == null -> {
+                        oldLonRecordConvertedAmount == null -> {
                     ioThread {
                         exchangeRatesLogic.convertAmount(
                             baseCurrency = baseCurrency(),

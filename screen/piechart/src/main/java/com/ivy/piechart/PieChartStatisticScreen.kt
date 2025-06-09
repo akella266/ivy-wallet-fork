@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,19 +43,24 @@ import com.ivy.data.model.CategoryId
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
 import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.design.api.LocalTimeConverter
+import com.ivy.design.api.LocalTimeFormatter
+import com.ivy.design.api.LocalTimeProvider
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.design.utils.thenIf
+import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.horizontalSwipeListener
 import com.ivy.legacy.utils.rememberSwipeListenerState
-import com.ivy.design.utils.thenIf
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.PieChartStatisticScreen
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
+import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.ui.theme.GradientGreen
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Green
@@ -80,7 +84,6 @@ import com.ivy.wallet.ui.theme.pureBlur
 import com.ivy.wallet.ui.theme.toComposeColor
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1Row
 import kotlinx.collections.immutable.persistentListOf
-import java.time.Instant
 import java.util.UUID
 
 @ExperimentalFoundationApi
@@ -108,7 +111,9 @@ private fun BoxWithConstraintsScope.UI(
     onEvent: (PieChartStatisticEvent) -> Unit = {}
 ) {
     val nav = navigation()
-    val lazyState = rememberLazyListState()
+    val lazyState = rememberScrollPositionListState(
+        key = "item_pie_chart_lazy_column"
+    )
     val expanded = lazyState.firstVisibleItemIndex < 1
     val percentExpanded by animateFloatAsState(
         targetValue = if (expanded) 1f else 0f,
@@ -189,7 +194,7 @@ private fun BoxWithConstraintsScope.UI(
                 type = state.transactionType,
                 categoryAmounts = state.categoryAmounts,
                 selectedCategory = state.selectedCategory,
-                onCategoryClicked = { clickedCategory ->
+                onCategoryClick = { clickedCategory ->
                     onEvent(PieChartStatisticEvent.OnCategoryClicked(clickedCategory))
                 }
             )
@@ -296,7 +301,13 @@ private fun Header(
                     }
                 ),
                 iconStart = R.drawable.ic_calendar,
-                text = period.toDisplayShort(com.ivy.legacy.ivyWalletCtx().startDayOfMonth),
+                text = period.toDisplayShort(
+                    startDateOfMonth = ivyWalletCtx().startDayOfMonth,
+                    timeConverter = LocalTimeConverter.current,
+                    timeProvider = LocalTimeProvider.current,
+                    timeFormatter = LocalTimeFormatter.current,
+
+                    ),
             ) {
                 onShowMonthModal()
             }
@@ -482,9 +493,7 @@ private fun Preview_Expense() {
                         color = ColorInt(Green.toArgb()),
                         icon = IconAsset.unsafe("bills"),
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 791.0
                 ),
@@ -499,9 +508,7 @@ private fun Preview_Expense() {
                         color = ColorInt(Orange.toArgb()),
                         icon = IconAsset.unsafe("trees"),
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 411.93
                 ),
@@ -511,9 +518,7 @@ private fun Preview_Expense() {
                         color = ColorInt(IvyDark.toArgb()),
                         icon = null,
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 260.03
                 ),
@@ -523,9 +528,7 @@ private fun Preview_Expense() {
                         color = ColorInt(RedLight.toArgb()),
                         icon = null,
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 160.0
                 ),
@@ -535,9 +538,7 @@ private fun Preview_Expense() {
                         color = ColorInt(Red.toArgb()),
                         icon = null,
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 2.0
                 ),
@@ -547,9 +548,7 @@ private fun Preview_Expense() {
                         color = ColorInt(IvyLight.toArgb()),
                         icon = IconAsset.unsafe("work"),
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 2.0
                 ),
@@ -585,9 +584,7 @@ private fun Preview_Income() {
                         color = ColorInt(Green.toArgb()),
                         icon = IconAsset.unsafe("bills"),
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 791.0
                 ),
@@ -602,9 +599,7 @@ private fun Preview_Income() {
                         color = ColorInt(Orange.toArgb()),
                         icon = IconAsset.unsafe("trees"),
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 411.93
                 ),
@@ -614,9 +609,7 @@ private fun Preview_Income() {
                         color = ColorInt(IvyDark.toArgb()),
                         icon = null,
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 260.03
                 ),
@@ -626,9 +619,7 @@ private fun Preview_Income() {
                         color = ColorInt(RedLight.toArgb()),
                         icon = null,
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 160.0
                 ),
@@ -638,9 +629,7 @@ private fun Preview_Income() {
                         color = ColorInt(Red.toArgb()),
                         icon = null,
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 2.0
                 ),
@@ -650,9 +639,7 @@ private fun Preview_Income() {
                         color = ColorInt(IvyLight.toArgb()),
                         icon = IconAsset.unsafe("work"),
                         id = CategoryId(UUID.randomUUID()),
-                        lastUpdated = Instant.EPOCH,
                         orderNum = 0.0,
-                        removed = false,
                     ),
                     amount = 2.0
                 ),
