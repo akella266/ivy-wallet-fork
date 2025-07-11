@@ -80,6 +80,7 @@ fun BoxWithConstraintsScope.BottomBar(
 
     onAddIncome: () -> Unit,
     onAddExpense: () -> Unit,
+    onAddSmsExpense: () -> Unit,
     onAddTransfer: () -> Unit,
     onAddPlannedPayment: () -> Unit,
 
@@ -173,6 +174,7 @@ fun BoxWithConstraintsScope.BottomBar(
 
         onAddIncome = onAddIncome,
         onAddExpense = onAddExpense,
+        onAddSmsExpense = onAddSmsExpense,
         onAddTransfer = onAddTransfer,
         onAddPlannedPayment = onAddPlannedPayment
     )
@@ -275,14 +277,15 @@ private fun TransactionButtons(
 
     onAddIncome: () -> Unit,
     onAddExpense: () -> Unit,
+    onAddSmsExpense: () -> Unit,
     onAddTransfer: () -> Unit,
     onAddPlannedPayment: () -> Unit,
 ) {
     val ivyContext = ivyWalletCtx()
 
-    val bH = 48.dp
-    val bV = 20.dp // 24.dp
-    val bCenterV = 74.dp // 80.dp
+    val bH = 68.dp
+    val bV = 28.dp // 24.dp
+    val bCenterV = 104.dp // 80.dp
 
     if (buttonsShownPercent > 0.01f) {
         val buttonLeftX = bH.toDensityPx()
@@ -334,6 +337,16 @@ private fun TransactionButtons(
             buttonCenterY = buttonCenterY,
             clickAreaWidth = clickAreaWidth,
             onAddExpense = onAddExpense
+        )
+
+        AddExpenseSmsButton(
+            buttonsShownPercent = buttonsShownPercent,
+            fabStartX = fabStartX,
+            fabStartY = fabStartY + 150F,
+            buttonLeftX = buttonLeftX,
+            sideButtonsY = sideButtonsY + 350f,
+            clickAreaWidth = clickAreaWidth,
+            onAddIncome = onAddSmsExpense
         )
         // Add EXPENSE ------------------------------------------------------------------------------
 
@@ -519,6 +532,92 @@ private fun AddExpenseButton(
             .zIndex(199f)
             .clickableNoIndication(rememberInteractionSource()) {
                 onAddExpense()
+            }
+    )
+}
+
+@Composable
+private fun AddExpenseSmsButton(
+    buttonsShownPercent: Float,
+    fabStartX: Float,
+    fabStartY: Float,
+    buttonLeftX: Float,
+    sideButtonsY: Float,
+    clickAreaWidth: Int,
+    onAddIncome: () -> Unit,
+) {
+    IvyCircleButton(
+        modifier = Modifier
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+
+                val x = lerp(fabStartX, buttonLeftX, buttonsShownPercent)
+                val y = lerp(
+                    fabStartY,
+                    sideButtonsY - FAB_BUTTON_SIZE.roundToPx(),
+                    buttonsShownPercent
+                )
+
+                layout(placeable.width, placeable.height) {
+                    placeable.place(
+                        x = x.roundToInt(),
+                        y = y.roundToInt()
+                    )
+                }
+            }
+            .size(FAB_BUTTON_SIZE)
+            .zIndex(200f),
+        icon = R.drawable.ic_income,
+        backgroundGradient = GradientGreen,
+        tint = White,
+        onClick = onAddIncome
+    )
+
+    Text(
+        modifier = Modifier
+            .width(FAB_BUTTON_SIZE + 16.dp)
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, placeable.height) {
+                    placeable.place(
+                        x = buttonLeftX.roundToInt() - 8.dp.roundToPx(),
+                        y = (sideButtonsY + 12.dp.toPx()).roundToInt()
+                    )
+                }
+            }
+            .alpha(buttonsShownPercent)
+            .clickableNoIndication(rememberInteractionSource()) {
+                onAddIncome()
+            }
+            .zIndex(200f),
+        text = stringResource(R.string.add_sms_expense_uppercase),
+        style = UI.typo.c.style(
+            color = UI.colors.pureInverse,
+            fontWeight = FontWeight.ExtraBold,
+            textAlign = TextAlign.Center
+        )
+    )
+
+    // Click area
+    Spacer(
+        modifier = Modifier
+            .size(
+                width = clickAreaWidth.toDensityDp(),
+                height = TRN_BUTTON_CLICK_AREA_HEIGHT
+            )
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+
+                layout(placeable.width, placeable.height) {
+                    placeable.place(
+                        x = 0,
+                        y = sideButtonsY.roundToInt() - FAB_BUTTON_SIZE.roundToPx() - 16.dp.roundToPx()
+                    )
+                }
+            }
+            .zIndex(199f)
+            .clickableNoIndication(rememberInteractionSource()) {
+//                onAddIncome()
             }
     )
 }

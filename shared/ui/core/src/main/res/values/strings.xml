@@ -136,6 +136,7 @@
     <string name="add_planned_payment">Add planned payment</string>
     <string name="add_income_uppercase">ADD INCOME</string>
     <string name="add_expense_uppercase">ADD EXPENSE</string>
+    <string name="add_sms_expense_uppercase">ADD SMS EXPENSE</string>
     <string name="account_transfer">ACCOUNT TRANSFER</string>
     <string name="skip">Skip</string>
     <string name="add_new">Add new</string>

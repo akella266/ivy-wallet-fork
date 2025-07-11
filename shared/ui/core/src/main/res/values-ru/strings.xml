@@ -135,6 +135,7 @@
     <string name="add_planned_payment">Добавить запланированный платёж</string>
     <string name="add_income_uppercase">ДОБАВИТЬ ДОХОД</string>
     <string name="add_expense_uppercase">ДОБАВИТЬ РАСХОД</string>
+    <string name="add_sms_expense_uppercase">ДОБАВИТЬ РАСХОД (СМС)</string>
     <string name="account_transfer">ПЕРЕВОД</string>
     <string name="skip">Пропустить</string>
     <string name="add_new">Добавить новое</string>

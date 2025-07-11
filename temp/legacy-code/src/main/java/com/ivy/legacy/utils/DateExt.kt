@@ -5,6 +5,14 @@ import androidx.compose.ui.platform.LocalContext
 import com.ivy.base.legacy.stringRes
 import com.ivy.frp.Total
 import com.ivy.ui.R
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeFormat
+import kotlinx.datetime.format.DateTimeFormatBuilder
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -13,6 +21,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlinx.datetime.LocalDateTime.Companion as LocalDateTimeX
 
 fun timeNowLocal(): LocalDateTime = LocalDateTime.now()
 
@@ -79,6 +88,40 @@ fun LocalDateTime.formatNicely(
 }
 
 fun LocalDateTime.getISOFormattedDateTime(): String = this.formatLocal("yyyyMMdd-HHmm")
+
+fun Instant.formatNicelyWithTime(): String {
+    val localDateTime = this.toLocalDateTime(TimeZone.currentSystemDefault())
+    val today = dateNowUTC()
+    val isThisYear = today.year == localDateTime.year
+
+    val localDateTimePatternNoWeekDay = LocalDateTimeX.Format {
+        dayOfMonth()
+        char(' ')
+        monthName(MonthNames.ENGLISH_ABBREVIATED)
+        char(' ')
+        hour()
+        char(':')
+        minute()
+    }
+
+    val localDateTimePattern = LocalDateTimeX.Format {
+        dayOfMonth()
+        char(' ')
+        monthName(MonthNames.ENGLISH_ABBREVIATED)
+        chars(", ")
+        year()
+        char(' ')
+        hour()
+        char(':')
+        minute()
+    }
+
+    return if (isThisYear) {
+        localDateTimePatternNoWeekDay.format(localDateTime)
+    } else {
+        localDateTimePattern.format(localDateTime)
+    }
+}
 
 fun LocalDateTime.formatNicelyWithTime(
     noWeekDay: Boolean = true,

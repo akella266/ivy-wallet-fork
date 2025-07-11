@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.datastore)
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.opencsv)
+    implementation(libs.kotlin.datetime)
 
     testImplementation(projects.shared.data.modelTesting)
     testImplementation(projects.shared.data.coreTesting)

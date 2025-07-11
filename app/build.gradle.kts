@@ -146,6 +146,7 @@ dependencies {
     implementation(projects.screen.search)
     implementation(projects.screen.settings)
     implementation(projects.screen.transactions)
+    implementation(projects.screen.sms)
     implementation(projects.shared.base)
     implementation(projects.shared.data.core)
     implementation(projects.shared.domain)
