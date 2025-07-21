@@ -1,19 +1,28 @@
 package com.ivy.sms
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
@@ -25,19 +34,29 @@ import com.ivy.base.model.TransactionType
 import com.ivy.data.model.SmsModel
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.design.l1_buildingBlocks.IvyText
+import com.ivy.design.l1_buildingBlocks.data.IvyPadding
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
 import com.ivy.legacy.utils.formatNicelyWithTime
+import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.wallet.ui.theme.Gray
+import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyToolbar
 import kotlinx.datetime.Clock
+import java.time.format.TextStyle
 
 @Composable
 fun SmsExpensesScreen() {
     val viewModel = screenScopedViewModel<SmsViewModel>()
     val state by viewModel.state.collectAsState()
-    SmsScreenContent(state)
+
+    SmsScreenContent(
+        state,
+        viewModel::onSmsReadPermissionResult
+    )
+
     LaunchedEffect(viewModel) {
         viewModel.load()
     }
@@ -45,22 +64,91 @@ fun SmsExpensesScreen() {
 
 @Composable
 private fun SmsScreenContent(
-    state: SmsScreenState
+    state: SmsScreenState,
+    onPermissionResult: (Boolean) -> Unit
 ) {
-    Column {
-        IvyToolbar(onBack = {}) {
-            Text("Транзакции из смс")
-        }
-        LazyColumn {
-            items(items = state.items, key = { item -> item.id }) { item: SmsModel ->
-                SmsTransactionItem(
-                    smsModel = item,
-                    baseCurrency = state.baseCurrency,
-                    onClick = {
-                        // TODO: open screen where we choose account with other editable transaction fields
-                    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = onPermissionResult
+    )
+    val navigation = navigation()
+
+    Column(
+        modifier = Modifier.systemBarsPadding()
+    ) {
+        IvyToolbar(onBack = navigation::back) {
+            Spacer(modifier = Modifier.weight(1f))
+            IvyText(
+                modifier = Modifier.padding(end = 16.dp),
+                text = "Транзакции из смс",
+                typo = UI.typo.b1.copy(
+                    color = UI.colors.pureInverse
                 )
-            }
+            )
+        }
+        when (state.isPermissionGranted) {
+            null -> Loading(modifier = Modifier.fillMaxSize())
+            false -> NoPermissionGranted(
+                requestPermission = { permissionLauncher.launch(Manifest.permission.READ_SMS) }
+            )
+            true -> SmsTransactions(
+                state.items,
+                state.baseCurrency
+            )
+        }
+    }
+}
+
+@Composable
+fun Loading(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = UI.colors.primary)
+    }
+}
+
+@Composable
+fun NoPermissionGranted(
+    modifier: Modifier = Modifier,
+    requestPermission: () -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+        IvyText(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            text = "Необходимо разрешить доступ к чтению смс, чтобы иметь возможность прочитать ваши транзакции",
+            typo = UI.typo.b2.copy(
+                color = UI.colors.pureInverse
+            ),
+        )
+        IvyButton(
+            text = "Разрешить",
+            onClick = requestPermission,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+fun SmsTransactions(
+    items: List<SmsModel>,
+    baseCurrency: String,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(modifier = modifier) {
+        items(items = items, key = { item -> item.id }) { item: SmsModel ->
+            SmsTransactionItem(
+                smsModel = item,
+                baseCurrency = baseCurrency,
+                onClick = {
+                    // TODO: open screen where we choose account with other editable transaction fields
+                }
+            )
         }
     }
 }
