@@ -45,7 +45,6 @@ import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyToolbar
 import kotlinx.datetime.Clock
-import java.time.format.TextStyle
 
 @Composable
 fun SmsExpensesScreen() {
@@ -116,11 +115,12 @@ fun NoPermissionGranted(
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.weight(1f))
         IvyText(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 24.dp),
             text = "Необходимо разрешить доступ к чтению смс, чтобы иметь возможность прочитать ваши транзакции",
             typo = UI.typo.b2.copy(
                 color = UI.colors.pureInverse
@@ -140,15 +140,29 @@ fun SmsTransactions(
     baseCurrency: String,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(modifier = modifier) {
-        items(items = items, key = { item -> item.id }) { item: SmsModel ->
-            SmsTransactionItem(
-                smsModel = item,
-                baseCurrency = baseCurrency,
-                onClick = {
-                    // TODO: open screen where we choose account with other editable transaction fields
-                }
+    if (items.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            IvyText(
+                text = "Пусто",
+                typo = UI.typo.b2.copy(
+                    color = UI.colors.pureInverse
+                )
             )
+        }
+    } else {
+        LazyColumn(modifier = modifier) {
+            items(items = items, key = { item -> item.id }) { item: SmsModel ->
+                SmsTransactionItem(
+                    smsModel = item,
+                    baseCurrency = baseCurrency,
+                    onClick = {
+                        // TODO: open screen where we choose account with other editable transaction fields
+                    }
+                )
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import java.util.UUID
 import javax.inject.Inject
 
 private const val BODY_COLUMN_NAME = "body"
@@ -23,9 +24,12 @@ internal class SmsRepositoryImpl @Inject constructor(
     override suspend fun readSms(fromDate: Instant): List<SmsModel> {
         val sms = mutableListOf<SmsModel>()
         val uri = "content://sms/inbox".toUri()
+
         contentResolver.query(
             uri,
-            arrayOf(ID_COLUMN_NAME, BODY_COLUMN_NAME, ADDRESS_COLUMN_NAME),
+            arrayOf(
+//                ID_COLUMN_NAME,
+                BODY_COLUMN_NAME, ADDRESS_COLUMN_NAME),
             "date > ?",
             arrayOf(fromDate.toLocalDateTime(TimeZone.currentSystemDefault()).date.toEpochDays().toString()),
             null
@@ -34,14 +38,14 @@ internal class SmsRepositoryImpl @Inject constructor(
 
             val bodyIndex = cursor.getColumnIndex(BODY_COLUMN_NAME)
             val addressIndex = cursor.getColumnIndex(ADDRESS_COLUMN_NAME)
-            val idIndex = cursor.getColumnIndex(ID_COLUMN_NAME)
+//            val idIndex = cursor.getColumnIndex(ID_COLUMN_NAME)
 
             while (cursor.moveToNext()) {
                 val body = cursor.getString(bodyIndex)
                 val address = cursor.getString(addressIndex)
-                val id = cursor.getString(idIndex)
+//                val id = cursor.getString(idIndex)
 
-                smsMapper.map(id, body, address)?.let { model ->
+                smsMapper.map(UUID.randomUUID().toString(), body, address)?.let { model ->
                     sms.add(model)
                 }
             }

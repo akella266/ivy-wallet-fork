@@ -41,6 +41,7 @@ internal class SmsViewModel @Inject constructor(
                     s.copy(
                         items = smsModels,
                         baseCurrency = baseCurrency,
+                        isPermissionGranted = true
                     )
                 }
             } else {
