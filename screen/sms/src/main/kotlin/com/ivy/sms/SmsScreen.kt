@@ -35,7 +35,6 @@ import com.ivy.data.model.SmsModel
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.IvyText
-import com.ivy.design.l1_buildingBlocks.data.IvyPadding
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
 import com.ivy.legacy.utils.formatNicelyWithTime
@@ -177,7 +176,7 @@ private fun SmsTransactionItem(
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .clip(UI.shapes.r4)
                 .clickable {
                     onClick()

@@ -7,6 +7,7 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.model.SmsModel
 import com.ivy.data.repository.SmsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,9 +15,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeComponents
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import javax.inject.Inject
 
@@ -30,16 +37,28 @@ internal class SmsViewModel @Inject constructor(
     private val _state = MutableStateFlow(SmsScreenState())
     val state: StateFlow<SmsScreenState> = _state.asStateFlow()
 
+    private val rusMonthNames = MonthNames(listOf(
+        "января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября",
+        "октября", "ноября", "декабря"
+    ))
+
+    private val dateFormater = DateTimeComponents.Format {
+        dayOfMonth()
+        char(' ')
+        monthName(rusMonthNames)
+    }
+
     fun load() {
         viewModelScope.launch {
             val result = permissionChecker.checkPermissionGranted(Manifest.permission.READ_SMS)
 
             if (result) {
                 val smsModels = smsRepository.readSms(getCurrentDayStart())
+                val smsItems = handleSmsModels(smsModels)
                 val baseCurrency = settingsDao.findFirst().currency
                 _state.update { s ->
                     s.copy(
-                        items = smsModels,
+                        items = smsItems,
                         baseCurrency = baseCurrency,
                         isPermissionGranted = true
                     )
@@ -58,6 +77,20 @@ internal class SmsViewModel @Inject constructor(
         }
     }
 
+    private fun handleSmsModels(models: List<SmsModel>) =
+        models.groupBy(
+            keySelector = { smsModel -> smsModel.date.format(dateFormater) },
+            valueTransform = { smsModel ->
+                SmsListItem.Sms(
+                    smsModel.id,
+                    smsModel.cardLastDigits,
+                    smsModel.date,
+                    smsModel.amount,
+                    smsModel.consumer
+                )
+            }
+        )
+
     private fun getCurrentDayStart(): Instant {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         val startOfDay = today.atTime(0, 0, 0)
@@ -67,7 +100,7 @@ internal class SmsViewModel @Inject constructor(
 
 internal data class SmsScreenState(
     val isPermissionGranted: Boolean? = null,
-    val items: List<SmsModel> = emptyList(),
+    val items: ImmutableList<SmsListItem>? = null,
     val baseCurrency: String = "",
     val isLoading: Boolean = false,
     val isError: Boolean = false,
