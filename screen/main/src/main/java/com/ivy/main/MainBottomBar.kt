@@ -1,5 +1,6 @@
 package com.ivy.main
 
+import android.annotation.SuppressLint
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -622,6 +623,7 @@ private fun AddExpenseSmsButton(
     )
 }
 
+@SuppressLint("ComposeMultipleContentEmitters")
 @Composable
 private fun AddTransferButton(
     buttonsShownPercent: Float,

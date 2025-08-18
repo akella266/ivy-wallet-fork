@@ -12,5 +12,11 @@ sealed interface SmsListItem {
         val date: Instant,
         val amount: Double,
         val consumer: String,
-    )
+    ) : SmsListItem
 }
+
+fun SmsListItem.getKey(): String =
+    when (this) {
+        is SmsListItem.DateSeparator -> date
+        is SmsListItem.Sms -> id
+    }

@@ -8,6 +8,7 @@ import com.ivy.data.model.SmsModel
 import com.ivy.data.repository.SmsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -77,8 +78,8 @@ internal class SmsViewModel @Inject constructor(
         }
     }
 
-    private fun handleSmsModels(models: List<SmsModel>) =
-        models.groupBy(
+    private fun handleSmsModels(models: List<SmsModel>): ImmutableList<SmsListItem> {
+        val smsSeparatedByDate = models.groupBy(
             keySelector = { smsModel -> smsModel.date.format(dateFormater) },
             valueTransform = { smsModel ->
                 SmsListItem.Sms(
@@ -90,6 +91,14 @@ internal class SmsViewModel @Inject constructor(
                 )
             }
         )
+
+        return buildList<SmsListItem> {
+            smsSeparatedByDate.entries.forEach { (date, smsModels) ->
+                add(SmsListItem.DateSeparator(date))
+                smsModels.forEach { model -> add(model) }
+            }
+        }.toImmutableList()
+    }
 
     private fun getCurrentDayStart(): Instant {
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())

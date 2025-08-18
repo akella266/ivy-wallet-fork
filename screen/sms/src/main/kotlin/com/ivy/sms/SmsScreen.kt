@@ -43,6 +43,9 @@ import com.ivy.navigation.screenScopedViewModel
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyToolbar
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.immutableListOf
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.datetime.Clock
 
 @Composable
@@ -75,7 +78,6 @@ private fun SmsScreenContent(
         modifier = Modifier.systemBarsPadding()
     ) {
         IvyToolbar(onBack = navigation::back) {
-            Spacer(modifier = Modifier.weight(1f))
             IvyText(
                 modifier = Modifier.padding(end = 16.dp),
                 text = "Транзакции из смс",
@@ -135,11 +137,11 @@ fun NoPermissionGranted(
 
 @Composable
 fun SmsTransactions(
-    items: List<SmsModel>,
+    items: ImmutableList<SmsListItem>?,
     baseCurrency: String,
     modifier: Modifier = Modifier
 ) {
-    if (items.isEmpty()) {
+    if (items.isNullOrEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -153,22 +155,53 @@ fun SmsTransactions(
         }
     } else {
         LazyColumn(modifier = modifier) {
-            items(items = items, key = { item -> item.id }) { item: SmsModel ->
-                SmsTransactionItem(
-                    smsModel = item,
-                    baseCurrency = baseCurrency,
-                    onClick = {
-                        // TODO: open screen where we choose account with other editable transaction fields
-                    }
-                )
+            items(
+                items = items as List<SmsListItem>,
+                key = { item: SmsListItem -> item.getKey() },
+                contentType = { item: SmsListItem -> item.javaClass },
+            ) { item: SmsListItem ->
+                when (item) {
+                    is SmsListItem.Sms ->
+                        SmsTransactionItem(
+                            smsModel = item,
+                            baseCurrency = baseCurrency,
+                            onClick = {
+                                // TODO: open screen where we choose account with other editable transaction fields
+                            }
+                        )
+                    is SmsListItem.DateSeparator ->
+                        DateSeparator(
+                            modifier = Modifier.padding(start = 12.dp),
+                            date = item.date
+                        )
+                }
+
             }
         }
     }
 }
 
 @Composable
+private fun DateSeparator(
+    date: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        IvyText(
+            text = date,
+            typo = UI.typo.h1.copy(
+                color = UI.colors.pureInverse
+            )
+        )
+    }
+}
+
+@Composable
 private fun SmsTransactionItem(
-    smsModel: SmsModel,
+    smsModel: SmsListItem.Sms,
     baseCurrency: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
@@ -224,16 +257,21 @@ private fun SmsTransactionItem(
 @Composable
 private fun PreviewItem() {
     IvyWalletPreview(Theme.LIGHT) {
-        SmsTransactionItem(
-            smsModel = SmsModel(
-                id = "1234",
-                cardLastDigits = "3456",
-                date = Clock.System.now(),
-                amount = 123.45,
-                consumer = "ATM PBT"
+        SmsScreenContent(
+            state = SmsScreenState(
+                isPermissionGranted = true,
+                items = persistentListOf(
+                    SmsListItem.DateSeparator("12.03.1997"),
+                    SmsListItem.Sms(
+                        id = "1234",
+                        cardLastDigits = "3456",
+                        date = Clock.System.now(),
+                        amount = 123.45,
+                        consumer = "ATM PBT"
+                    )
+                )
             ),
-            baseCurrency = "USD",
-            onClick = {}
+            onPermissionResult = {}
         )
     }
 }

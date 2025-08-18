@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 private const val BODY_COLUMN_NAME = "body"
 private const val ADDRESS_COLUMN_NAME = "address"
-private const val ID_COLUMN_NAME = "id"
+private const val ID_COLUMN_NAME = "_id"
 
 internal class SmsRepositoryImpl @Inject constructor(
     private val contentResolver: ContentResolver,
@@ -28,8 +28,10 @@ internal class SmsRepositoryImpl @Inject constructor(
         contentResolver.query(
             uri,
             arrayOf(
-//                ID_COLUMN_NAME,
-                BODY_COLUMN_NAME, ADDRESS_COLUMN_NAME),
+                ID_COLUMN_NAME,
+                BODY_COLUMN_NAME,
+                ADDRESS_COLUMN_NAME
+            ),
             "date > ?",
             arrayOf(fromDate.toLocalDateTime(TimeZone.currentSystemDefault()).date.toEpochDays().toString()),
             null
@@ -38,14 +40,14 @@ internal class SmsRepositoryImpl @Inject constructor(
 
             val bodyIndex = cursor.getColumnIndex(BODY_COLUMN_NAME)
             val addressIndex = cursor.getColumnIndex(ADDRESS_COLUMN_NAME)
-//            val idIndex = cursor.getColumnIndex(ID_COLUMN_NAME)
+            val idIndex = cursor.getColumnIndex(ID_COLUMN_NAME)
 
             while (cursor.moveToNext()) {
                 val body = cursor.getString(bodyIndex)
                 val address = cursor.getString(addressIndex)
-//                val id = cursor.getString(idIndex)
+                val id = cursor.getString(idIndex)
 
-                smsMapper.map(UUID.randomUUID().toString(), body, address)?.let { model ->
+                smsMapper.map(id, body, address)?.let { model ->
                     sms.add(model)
                 }
             }
