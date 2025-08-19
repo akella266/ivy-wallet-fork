@@ -6,11 +6,15 @@ import androidx.lifecycle.viewModelScope
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.model.SmsModel
 import com.ivy.data.repository.SmsRepository
+import com.ivy.wallet.domain.action.account.AccountsAct
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,6 +30,7 @@ import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,10 +38,14 @@ internal class SmsViewModel @Inject constructor(
     private val smsRepository: SmsRepository,
     private val settingsDao: SettingsDao,
     private val permissionChecker: PermissionChecker,
+    private val accountsAct: AccountsAct,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SmsScreenState())
     val state: StateFlow<SmsScreenState> = _state.asStateFlow()
+
+    private val _sideEffect = MutableSharedFlow<SmsSideEffect>()
+    val sideEffect: Flow<SmsSideEffect> = _sideEffect.asSharedFlow()
 
     private val rusMonthNames = MonthNames(listOf(
         "января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября",
@@ -78,6 +87,17 @@ internal class SmsViewModel @Inject constructor(
         }
     }
 
+    fun onSmsModelClicked(item: SmsListItem.Sms) {
+        viewModelScope.launch {
+            val accounts = accountsAct()
+            val accountForCard = accounts.find { acc -> acc.name.contains(item.cardLastDigits) }
+
+            _sideEffect.tryEmit(
+                SmsSideEffect.OpenEditTransaction(accountForCard?.id, item)
+            )
+        }
+    }
+
     private fun handleSmsModels(models: List<SmsModel>): ImmutableList<SmsListItem> {
         val smsSeparatedByDate = models.groupBy(
             keySelector = { smsModel -> smsModel.date.format(dateFormater) },
@@ -114,3 +134,13 @@ internal data class SmsScreenState(
     val isLoading: Boolean = false,
     val isError: Boolean = false,
 )
+
+internal sealed interface SmsSideEffect {
+
+    data object None : SmsSideEffect
+
+    data class OpenEditTransaction(
+        val accountId: UUID?,
+        val smsModel: SmsListItem.Sms,
+    ): SmsSideEffect
+}

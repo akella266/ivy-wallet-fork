@@ -38,6 +38,7 @@ import com.ivy.design.l1_buildingBlocks.IvyText
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
 import com.ivy.legacy.utils.formatNicelyWithTime
+import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.wallet.ui.theme.Gray
@@ -52,32 +53,49 @@ import kotlinx.datetime.Clock
 fun SmsExpensesScreen() {
     val viewModel = screenScopedViewModel<SmsViewModel>()
     val state by viewModel.state.collectAsState()
+    val sideEffect by viewModel.sideEffect.collectAsState(SmsSideEffect.None)
+    val navigation = navigation()
 
     SmsScreenContent(
         state,
-        viewModel::onSmsReadPermissionResult
+        viewModel::onSmsReadPermissionResult,
+        viewModel::onSmsModelClicked,
+        navigation::back,
     )
 
     LaunchedEffect(viewModel) {
         viewModel.load()
+    }
+
+    when (sideEffect) {
+        is SmsSideEffect.OpenEditTransaction ->
+            navigation.navigateTo(
+                EditTransactionScreen(
+                    initialTransactionId = null,
+                    type = TransactionType.EXPENSE,
+                    accountId = (sideEffect as SmsSideEffect.OpenEditTransaction).accountId
+                )
+            )
+        else -> {}
     }
 }
 
 @Composable
 private fun SmsScreenContent(
     state: SmsScreenState,
-    onPermissionResult: (Boolean) -> Unit
+    onPermissionResult: (Boolean) -> Unit,
+    onSmsModelClicked: (SmsListItem.Sms) -> Unit,
+    onBackClicked: () -> Unit,
 ) {
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = onPermissionResult
     )
-    val navigation = navigation()
 
     Column(
         modifier = Modifier.systemBarsPadding()
     ) {
-        IvyToolbar(onBack = navigation::back) {
+        IvyToolbar(onBack = onBackClicked) {
             IvyText(
                 modifier = Modifier.padding(end = 16.dp),
                 text = "Транзакции из смс",
@@ -91,9 +109,11 @@ private fun SmsScreenContent(
             false -> NoPermissionGranted(
                 requestPermission = { permissionLauncher.launch(Manifest.permission.READ_SMS) }
             )
+
             true -> SmsTransactions(
-                state.items,
-                state.baseCurrency
+                items = state.items,
+                baseCurrency = state.baseCurrency,
+                openEditTransaction = onSmsModelClicked
             )
         }
     }
@@ -139,7 +159,8 @@ fun NoPermissionGranted(
 fun SmsTransactions(
     items: ImmutableList<SmsListItem>?,
     baseCurrency: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    openEditTransaction: (SmsListItem.Sms) -> Unit
 ) {
     if (items.isNullOrEmpty()) {
         Box(
@@ -166,9 +187,10 @@ fun SmsTransactions(
                             smsModel = item,
                             baseCurrency = baseCurrency,
                             onClick = {
-                                // TODO: open screen where we choose account with other editable transaction fields
+                                openEditTransaction(item)
                             }
                         )
+
                     is SmsListItem.DateSeparator ->
                         DateSeparator(
                             modifier = Modifier.padding(start = 12.dp),
@@ -206,52 +228,52 @@ private fun SmsTransactionItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .clip(UI.shapes.r4)
-                .clickable {
-                    onClick()
-                }
-                .background(UI.colors.medium, UI.shapes.r4)
-                .testTag("sms_transaction_item")
-        ) {
-            Spacer(Modifier.height(20.dp))
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clip(UI.shapes.r4)
+            .clickable {
+                onClick()
+            }
+            .background(UI.colors.medium, UI.shapes.r4)
+            .testTag("sms_transaction_item")
+    ) {
+        Spacer(Modifier.height(20.dp))
+        Text(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            text = smsModel.date.formatNicelyWithTime().uppercase(),
+            style = UI.typo.nC.style(
+                color = Gray,
+                fontWeight = FontWeight.Bold
+            )
+        )
+
+        if (smsModel.consumer.isNotBlank()) {
             Text(
-                modifier = Modifier.padding(horizontal = 24.dp),
-                text = smsModel.date.formatNicelyWithTime().uppercase(),
-                style = UI.typo.nC.style(
-                    color = Gray,
-                    fontWeight = FontWeight.Bold
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                text = smsModel.consumer,
+                style = UI.typo.b1.style(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = UI.colors.pureInverse
                 )
             )
+        }
 
-            if (smsModel.consumer.isNotBlank()) {
-                Text(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                    text = smsModel.consumer,
-                    style = UI.typo.b1.style(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = UI.colors.pureInverse
-                    )
-                )
-            }
-
-            if (smsModel.consumer.isBlank()) {
-                Spacer(Modifier.height(16.dp))
-            }
-
-            TypeAmountCurrency(
-                transactionType = TransactionType.EXPENSE,
-                dueDate = null,
-                currency = baseCurrency,
-                amount = smsModel.amount
-            )
-
+        if (smsModel.consumer.isBlank()) {
             Spacer(Modifier.height(16.dp))
         }
+
+        TypeAmountCurrency(
+            transactionType = TransactionType.EXPENSE,
+            dueDate = null,
+            currency = baseCurrency,
+            amount = smsModel.amount
+        )
+
+        Spacer(Modifier.height(16.dp))
     }
+}
 
 @Preview
 @Composable
@@ -271,7 +293,9 @@ private fun PreviewItem() {
                     )
                 )
             ),
-            onPermissionResult = {}
+            onPermissionResult = {},
+            onSmsModelClicked = {},
+            onBackClicked = {}
         )
     }
 }

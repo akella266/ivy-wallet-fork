@@ -12,6 +12,10 @@ class AccountsAct @Inject constructor(
     private val accountDao: AccountDao
 ) : FPAction<Unit, ImmutableList<Account>>() {
 
+    suspend operator fun invoke() =
+        this(Unit)
+
+
     override suspend fun Unit.compose(): suspend () -> ImmutableList<Account> = suspend {
         io { accountDao.findAll().map { it.toLegacyDomain() }.toImmutableList() }
     }
