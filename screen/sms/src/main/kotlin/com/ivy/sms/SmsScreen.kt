@@ -1,14 +1,19 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.ivy.sms
 
 import android.Manifest
+import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +22,11 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,7 +34,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,12 +47,15 @@ import com.ivy.data.model.SmsModel
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.IvyText
+import com.ivy.design.system.colors.IvyColors
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
 import com.ivy.legacy.utils.formatNicelyWithTime
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
+import com.ivy.ui.R
+import com.ivy.wallet.ui.edit.core.Toolbar
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyToolbar
@@ -68,14 +83,16 @@ fun SmsExpensesScreen() {
     }
 
     when (sideEffect) {
-        is SmsSideEffect.OpenEditTransaction ->
+        is SmsSideEffect.OpenEditTransaction -> {
+            val effect = sideEffect as SmsSideEffect.OpenEditTransaction
             navigation.navigateTo(
                 EditTransactionScreen(
                     initialTransactionId = null,
                     type = TransactionType.EXPENSE,
-                    accountId = (sideEffect as SmsSideEffect.OpenEditTransaction).accountId
+                    accountId = effect.accountId
                 )
             )
+        }
         else -> {}
     }
 }
@@ -93,17 +110,29 @@ private fun SmsScreenContent(
     )
 
     Column(
-        modifier = Modifier.systemBarsPadding()
+        modifier = Modifier
+            .background(color = UI.colors.pure)
     ) {
-        IvyToolbar(onBack = onBackClicked) {
-            IvyText(
-                modifier = Modifier.padding(end = 16.dp),
-                text = "Транзакции из смс",
-                typo = UI.typo.b1.copy(
-                    color = UI.colors.pureInverse
+        TopAppBar(
+            title = {
+                IvyText(
+                    modifier = Modifier.padding(end = 16.dp),
+                    text = "Транзакции из смс",
+                    typo = UI.typo.b1.copy(
+                        color = UI.colors.pureInverse
+                    )
                 )
-            )
-        }
+            },
+            navigationIcon = { Image(
+                modifier = Modifier
+                    .padding(horizontal = 12.dp)
+                    .clickable { onBackClicked() },
+                painter = painterResource(R.drawable.ic_back),
+                colorFilter = ColorFilter.tint(UI.colors.pureInverse),
+                contentDescription = null,
+            ) },
+            colors = TopAppBarDefaults.topAppBarColors()
+        )
         when (state.isPermissionGranted) {
             null -> Loading(modifier = Modifier.fillMaxSize())
             false -> NoPermissionGranted(
@@ -197,7 +226,6 @@ fun SmsTransactions(
                             date = item.date
                         )
                 }
-
             }
         }
     }
@@ -214,7 +242,7 @@ private fun DateSeparator(
     ) {
         IvyText(
             text = date,
-            typo = UI.typo.h1.copy(
+            typo = UI.typo.h2.copy(
                 color = UI.colors.pureInverse
             )
         )
@@ -275,9 +303,11 @@ private fun SmsTransactionItem(
     }
 }
 
-@Preview
+@Preview(showBackground = false, showSystemUi = false,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
+)
 @Composable
-private fun PreviewItem() {
+private fun PreviewItems() {
     IvyWalletPreview(Theme.LIGHT) {
         SmsScreenContent(
             state = SmsScreenState(
@@ -292,6 +322,24 @@ private fun PreviewItem() {
                         consumer = "ATM PBT"
                     )
                 )
+            ),
+            onPermissionResult = {},
+            onSmsModelClicked = {},
+            onBackClicked = {}
+        )
+    }
+}
+
+@Preview(showBackground = false, showSystemUi = false,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
+)
+@Composable
+private fun PreviewEmpty() {
+    IvyWalletPreview(Theme.LIGHT) {
+        SmsScreenContent(
+            state = SmsScreenState(
+                isPermissionGranted = true,
+                items = persistentListOf()
             ),
             onPermissionResult = {},
             onSmsModelClicked = {},

@@ -92,7 +92,7 @@ internal class SmsViewModel @Inject constructor(
             val accounts = accountsAct()
             val accountForCard = accounts.find { acc -> acc.name.contains(item.cardLastDigits) }
 
-            _sideEffect.tryEmit(
+            _sideEffect.emit(
                 SmsSideEffect.OpenEditTransaction(accountForCard?.id, item)
             )
         }
