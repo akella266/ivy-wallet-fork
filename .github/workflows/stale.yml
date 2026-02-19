@@ -1,9 +1,14 @@
 name: 'Close Stale Issues and PRs'
 
+# on:
+  # workflow_dispatch:
+  # schedule:
+    # - cron: '0 8 * * *'
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 8 * * *'
+  push:
+    branches:
+      - main
+  pull_request:
 
 permissions:
   contents: write
