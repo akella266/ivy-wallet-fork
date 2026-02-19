@@ -1,10 +1,10 @@
 name: 'Gradle Wrapper Upgrade'
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 8 * * *'
-
+  push:
+    branches: 
+      - main
+      
 jobs:
   upgrade-gradle-wrapper:
     runs-on: ubuntu-latest
