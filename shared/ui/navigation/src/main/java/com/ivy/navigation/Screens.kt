@@ -2,6 +2,7 @@ package com.ivy.navigation
 
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
+import com.ivy.base.model.TransactionsExtra
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import java.util.UUID
@@ -28,7 +29,9 @@ data class EditTransactionScreen(
     val type: TransactionType,
     // extras
     val accountId: UUID? = null,
-    val categoryId: UUID? = null
+    val categoryId: UUID? = null,
+    val smsId: String? = null,
+    val extra: TransactionsExtra? = null,
 ) : Screen {
     override val isLegacy: Boolean
         get() = true

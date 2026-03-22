@@ -235,4 +235,10 @@ interface TransactionDao {
     suspend fun findAllByLoanId(
         loanId: UUID
     ): List<TransactionEntity>
+
+    @Query("SELECT * FROM transactions WHERE isDeleted = 0 AND smsId = :smsId LIMIT 1")
+    suspend fun findBySmsId(smsId: String): TransactionEntity?
+
+    @Query("SELECT smsId FROM transactions WHERE isDeleted = 0 AND smsId IS NOT NULL")
+    suspend fun findAllSmsIds(): List<String>
 }

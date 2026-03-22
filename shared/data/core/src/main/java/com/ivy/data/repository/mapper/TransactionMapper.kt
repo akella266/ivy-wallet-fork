@@ -165,6 +165,7 @@ class TransactionMapper @Inject constructor(
             attachmentUrl = null,
             loanId = metadata.loanId,
             loanRecordId = metadata.loanRecordId,
+            smsId = (this as? Expense)?.smsId,
             isSynced = true,
             isDeleted = removed,
             id = id.value

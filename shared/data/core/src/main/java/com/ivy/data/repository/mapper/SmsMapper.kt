@@ -47,6 +47,7 @@ internal class SmsMapper @Inject constructor() {
                 date = Instant.parse(dateTime, dateTimeFormatter),
                 amount = amountStr.toDoubleOrNull() ?: 0.0,
                 consumer = subject,
+                isProcessed = false
             )
         } else {
             null

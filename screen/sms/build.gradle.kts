@@ -15,4 +15,5 @@ dependencies {
     implementation(projects.temp.legacyCode)
     implementation(projects.temp.oldDesign)
     implementation(libs.kotlin.datetime)
+    implementation(libs.material)
 }

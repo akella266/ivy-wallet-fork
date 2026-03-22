@@ -12,6 +12,7 @@ sealed interface SmsListItem {
         val date: Instant,
         val amount: Double,
         val consumer: String,
+        val isProcessed: Boolean = false,
     ) : SmsListItem
 }
 

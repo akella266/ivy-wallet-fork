@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.TextToolbar
@@ -43,7 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.base.legacy.Theme
 import com.ivy.base.model.TransactionType
-import com.ivy.data.model.SmsModel
+import com.ivy.base.model.TransactionsExtra
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.IvyText
@@ -85,11 +86,17 @@ fun SmsExpensesScreen() {
     when (sideEffect) {
         is SmsSideEffect.OpenEditTransaction -> {
             val effect = sideEffect as SmsSideEffect.OpenEditTransaction
+            effect.smsModel
             navigation.navigateTo(
                 EditTransactionScreen(
                     initialTransactionId = null,
                     type = TransactionType.EXPENSE,
-                    accountId = effect.accountId
+                    accountId = effect.accountId,
+                    smsId = effect.smsId,
+                    extra = TransactionsExtra(
+                        name = effect.smsModel.consumer,
+                        amount = effect.smsModel.amount
+                    )
                 )
             )
         }
@@ -256,6 +263,8 @@ private fun SmsTransactionItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val visualAlpha = if (smsModel.isProcessed) 0.45f else 1f
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -265,6 +274,7 @@ private fun SmsTransactionItem(
                 onClick()
             }
             .background(UI.colors.medium, UI.shapes.r4)
+            .alpha(visualAlpha)
             .testTag("sms_transaction_item")
     ) {
         Spacer(Modifier.height(20.dp))
@@ -299,6 +309,17 @@ private fun SmsTransactionItem(
             amount = smsModel.amount
         )
 
+        if (smsModel.isProcessed) {
+            Spacer(Modifier.height(8.dp))
+            IvyText(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                text = "Обработано",
+                typo = UI.typo.b2.copy(
+                    color = UI.colors.primary
+                )
+            )
+        }
+
         Spacer(Modifier.height(16.dp))
     }
 }
@@ -319,7 +340,8 @@ private fun PreviewItems() {
                         cardLastDigits = "3456",
                         date = Clock.System.now(),
                         amount = 123.45,
-                        consumer = "ATM PBT"
+                        consumer = "ATM PBT",
+                        isProcessed = true
                     )
                 )
             ),

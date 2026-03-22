@@ -242,6 +242,15 @@ class FakeTransactionDao : TransactionDao, WriteTransactionDao {
             .sortedByDescending { it.dateTime }
     }
 
+    override suspend fun findBySmsId(smsId: String): TransactionEntity? {
+        return items.find { it.smsId == smsId && !it.isDeleted }
+    }
+
+    override suspend fun findAllSmsIds(): List<String> {
+        return items.mapNotNull { it.smsId }
+            .distinct()
+    }
+
     override suspend fun countHappenedTransactions(): Long {
         return items.count { it.dateTime != null && !it.isDeleted }.toLong()
     }

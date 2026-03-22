@@ -8,4 +8,5 @@ data class SmsModel(
     val date: Instant,
     val amount: Double,
     val consumer: String,
+    val isProcessed: Boolean = false,
 )

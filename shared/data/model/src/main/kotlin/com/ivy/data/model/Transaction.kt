@@ -17,7 +17,6 @@ sealed interface Transaction : Syncable<TransactionId> {
     val time: Instant
     val settled: Boolean
     val metadata: TransactionMetadata
-
     // TODO: Get rid of Tags from the core model because of perf. and complexity
     val tags: List<TagId>
 }
@@ -50,6 +49,7 @@ data class Expense(
     override val tags: List<TagId>,
     val value: PositiveValue,
     val account: AccountId,
+    val smsId: String? = null,
 ) : Transaction
 
 data class Transfer(

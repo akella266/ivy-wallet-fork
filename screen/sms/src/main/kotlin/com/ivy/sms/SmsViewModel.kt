@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.model.SmsModel
+import com.ivy.data.repository.ProcessedSmsRepository
 import com.ivy.data.repository.SmsRepository
 import com.ivy.wallet.domain.action.account.AccountsAct
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,6 +37,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class SmsViewModel @Inject constructor(
     private val smsRepository: SmsRepository,
+    private val processedSmsRepository: ProcessedSmsRepository,
     private val settingsDao: SettingsDao,
     private val permissionChecker: PermissionChecker,
     private val accountsAct: AccountsAct,
@@ -63,7 +65,11 @@ internal class SmsViewModel @Inject constructor(
             val result = permissionChecker.checkPermissionGranted(Manifest.permission.READ_SMS)
 
             if (result) {
+                val processedSmsIds = processedSmsRepository.getProcessedSmsIds()
                 val smsModels = smsRepository.readSms(getCurrentDayStart())
+                    .map { model ->
+                        model.copy(isProcessed = processedSmsIds.contains(model.id))
+                    }
                 val smsItems = handleSmsModels(smsModels)
                 val baseCurrency = settingsDao.findFirst().currency
                 _state.update { s ->
@@ -93,7 +99,11 @@ internal class SmsViewModel @Inject constructor(
             val accountForCard = accounts.find { acc -> acc.name.contains(item.cardLastDigits) }
 
             _sideEffect.emit(
-                SmsSideEffect.OpenEditTransaction(accountForCard?.id, item)
+                SmsSideEffect.OpenEditTransaction(
+                    accountForCard?.id,
+                    item,
+                    item.id
+                )
             )
         }
     }
@@ -107,7 +117,8 @@ internal class SmsViewModel @Inject constructor(
                     smsModel.cardLastDigits,
                     smsModel.date,
                     smsModel.amount,
-                    smsModel.consumer
+                    smsModel.consumer,
+                    isProcessed = smsModel.isProcessed
                 )
             }
         )
@@ -142,5 +153,6 @@ internal sealed interface SmsSideEffect {
     data class OpenEditTransaction(
         val accountId: UUID?,
         val smsModel: SmsListItem.Sms,
+        val smsId: String?,
     ): SmsSideEffect
 }

@@ -43,6 +43,7 @@ data class Transaction(
 
     @Suppress("DataClassDefaultValues")
     val tags: ImmutableList<LegacyTag> = persistentListOf(),
+    val smsId: String? = null,
 
     val id: UUID = UUID.randomUUID()
 ) : TransactionHistoryItem

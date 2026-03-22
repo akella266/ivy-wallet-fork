@@ -1,5 +1,6 @@
 package com.ivy.data.db.entity
 
+import android.annotation.SuppressLint
 import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -11,6 +12,7 @@ import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 import java.util.*
 
+@SuppressLint("UnsafeOptInUsageError")
 @Keep
 @Serializable
 @Entity(tableName = "transactions")
@@ -61,5 +63,8 @@ data class TransactionEntity(
     @PrimaryKey
     @SerialName("id")
     @Serializable(with = KSerializerUUID::class)
-    val id: UUID = UUID.randomUUID()
+    val id: UUID = UUID.randomUUID(),
+
+    @SerialName("smsId")
+    val smsId: String? = null
 )
