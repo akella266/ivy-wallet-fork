@@ -618,7 +618,7 @@ private fun AddExpenseSmsButton(
             }
             .zIndex(199f)
             .clickableNoIndication(rememberInteractionSource()) {
-//                onAddIncome()
+                onAddIncome()
             }
     )
 }
