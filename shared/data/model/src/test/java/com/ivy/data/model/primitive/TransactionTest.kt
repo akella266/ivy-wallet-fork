@@ -3,10 +3,10 @@ package com.ivy.data.model.primitive
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.Expense
 import com.ivy.data.model.Income
+import com.ivy.data.model.PositiveValue
 import com.ivy.data.model.TransactionId
 import com.ivy.data.model.TransactionMetadata
 import com.ivy.data.model.Transfer
-import com.ivy.data.model.PositiveValue
 import com.ivy.data.model.getFromAccount
 import com.ivy.data.model.getFromValue
 import com.ivy.data.model.getToAccount
@@ -139,10 +139,9 @@ class TransactionTest {
             metadata = TransactionMetadata(
                 recurringRuleId = null,
                 loanId = null,
+                paidForDateTime = null,
                 loanRecordId = null
             ),
-            lastUpdated = Instant.EPOCH,
-            removed = false,
             tags = listOf(),
             value = PositiveValue(
                 amount = PositiveDouble.unsafe(1.0),
@@ -161,10 +160,9 @@ class TransactionTest {
             metadata = TransactionMetadata(
                 recurringRuleId = null,
                 loanId = null,
+                paidForDateTime = null,
                 loanRecordId = null
             ),
-            lastUpdated = Instant.EPOCH,
-            removed = false,
             tags = listOf(),
             value = PositiveValue(
                 amount = PositiveDouble.unsafe(1.0),
@@ -183,10 +181,9 @@ class TransactionTest {
             metadata = TransactionMetadata(
                 recurringRuleId = null,
                 loanId = null,
+                paidForDateTime = null,
                 loanRecordId = null
             ),
-            lastUpdated = Instant.EPOCH,
-            removed = false,
             tags = listOf(),
             fromAccount = AccountId,
             fromValue = PositiveValue(

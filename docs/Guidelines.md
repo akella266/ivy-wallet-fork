@@ -5,7 +5,7 @@ The biggest challenge in software engineering is the fight against **complexity*
 1. Your PR works and doesn't break anything.
 2. Your PR is simple and doesn't add complexity.
 
-Software engineering is also about **thinking**. Don't just follow blindly best practices and strive to do the "right" thing. Instead, ask yourself:
+Software engineering is also about **thinking**. Don't just blindly follow best practices and strive to do the "right" thing. Instead, ask yourself:
 
 - Is this the simplest solution?
 - Am I over-engineering? What does this give me?
@@ -38,5 +38,5 @@ To get started read:
 ## References
 
 - **[Yoda Style Architecture guidelines](./archive/Yoda-Style-Architecture.md)**
-- **[Adnroid Developers - Guide to app architecture](https://developer.android.com/topic/architecture)**
+- **[Android Developers - Guide to app architecture](https://developer.android.com/topic/architecture)**
 - **[The Grug Brained Developer](https://grugbrain.dev/)**

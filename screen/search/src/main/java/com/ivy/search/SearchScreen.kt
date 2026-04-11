@@ -68,6 +68,7 @@ private fun SearchUi(
         SearchInput(
             searchQueryTextFieldValue = searchQueryTextFieldValue,
             hint = stringResource(R.string.search_transactions),
+            showClearIcon = searchQueryTextFieldValue.text.isNotEmpty(),
             onSetSearchQueryTextField = {
                 searchQueryTextFieldValue = it
                 onEvent(SearchEvent.Search(it.text))
@@ -104,7 +105,8 @@ private fun SearchUi(
                 onPayOrGet = { },
                 emptyStateTitle = emptyStateTitle,
                 emptyStateText = emptyStateText,
-                dateDividerMarginTop = 16.dp
+                dateDividerMarginTop = 16.dp,
+                shouldShowAccountSpecificColorInTransactions = uiState.shouldShowAccountSpecificColorInTransactions
             )
 
             item {
@@ -129,11 +131,12 @@ private fun Preview(isDark: Boolean = false) {
     IvyPreview(isDark) {
         SearchUi(
             uiState = SearchState(
-                searchQuery = "Transaction",
+                searchQuery = "",
                 transactions = persistentListOf(),
                 baseCurrency = "",
                 accounts = persistentListOf(),
-                categories = persistentListOf()
+                categories = persistentListOf(),
+                shouldShowAccountSpecificColorInTransactions = false
             ),
             onEvent = {}
         )

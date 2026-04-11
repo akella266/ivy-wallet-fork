@@ -25,7 +25,9 @@
     <string name="app_budget">%1$s %2$s de orçamento da aplicação</string>
     <string name="budget_info_both">Informações do orçamento: %1$s / %2$s</string>
     <string name="budget_info">Informações sobre o orçamento: %1$s %2$s</string>
+    <string name="total_budget_info">Orçamento Total Restante: %1$s %2$s</string>
     <string name="add_category">Adicionar categoria</string>
+    <string name="add_manual_exchange_rate">Add rate</string>
     <string name="expenses">Despesas</string>
     <string name="expenses_count">Contagem de despesas</string>
     <string name="income">Rendimento</string>
@@ -448,7 +450,7 @@
     <string name="decrease_loan">Diminuir</string>
     <string name="msg_select_account_to_transfer">Selecione o destino da transferência</string>
     <string name="msg_source_account_destination_account_same_for_transfer">Selecione uma conta de destino diferente para a transferência</string>
-    <string name="others_optional">Outro (opcional)</string>
+    <string name="tags_optional">Tags (optional)</string>
     <string name="tags">Tags</string>
     <string name="search_tags">Pesquisar Tags</string>
     <string name="exchange_rates">Taxas de câmbio</string>
@@ -487,4 +489,7 @@
     <string name="import_csv_continue">Continuar</string>
     <string name="warning_import_csv_file">"\n!!!⚠️AVISO: A importação pode duplicar transações!!!\nTransações duplicadas NÃO podem ser excluídas facilmente e você precisará remover manualmente cada uma delas! \nMotivo: podemos Não analisamos IDs de transação porque o Ivy Wallet funciona apenas com UUID e outros aplicativos não.\nSe você está começando do zero, não se preocupe. Por favor, ignore esta mensagem."</string>
     <string name="select_tags">Selecionar tags</string>
+    <string name="language">Linguagem</string>
+    <string name="advanced_features">Configurações avançadas</string>
+    <string name="budget_exceeded_info">Orçamento excedido por %1$s %2$s</string>
 </resources>

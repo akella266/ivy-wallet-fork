@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 128,
-    "identityHash": "8bf36c147739fe0442c2dac348e8af7a",
+    "identityHash": "177f8030f5202e9229cc552c4dcb9f81",
     "entities": [
       {
         "tableName": "accounts",
@@ -74,7 +74,7 @@
       },
       {
         "tableName": "transactions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountId` TEXT NOT NULL, `type` TEXT NOT NULL, `amount` REAL NOT NULL, `toAccountId` TEXT, `toAmount` REAL, `title` TEXT, `description` TEXT, `dateTime` INTEGER, `categoryId` TEXT, `dueDate` INTEGER, `recurringRuleId` TEXT, `attachmentUrl` TEXT, `loanId` TEXT, `loanRecordId` TEXT, `isSynced` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `smsId` TEXT, `id` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountId` TEXT NOT NULL, `type` TEXT NOT NULL, `amount` REAL NOT NULL, `toAccountId` TEXT, `toAmount` REAL, `title` TEXT, `description` TEXT, `dateTime` INTEGER, `categoryId` TEXT, `dueDate` INTEGER, `recurringRuleId` TEXT, `paidForDateTime` INTEGER, `attachmentUrl` TEXT, `loanId` TEXT, `loanRecordId` TEXT, `isSynced` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `id` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "accountId",
@@ -140,6 +140,12 @@
             "fieldPath": "recurringRuleId",
             "columnName": "recurringRuleId",
             "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "paidForDateTime",
+            "columnName": "paidForDateTime",
+            "affinity": "INTEGER",
             "notNull": false
           },
           {
@@ -832,7 +838,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8bf36c147739fe0442c2dac348e8af7a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '177f8030f5202e9229cc552c4dcb9f81')"
     ]
   }
 }

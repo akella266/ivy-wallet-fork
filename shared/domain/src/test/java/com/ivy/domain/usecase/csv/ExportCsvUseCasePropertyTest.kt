@@ -2,6 +2,7 @@ package com.ivy.domain.usecase.csv
 
 import arrow.core.Some
 import com.ivy.base.TestDispatchersProvider
+import com.ivy.base.time.impl.TestTimeConverter
 import com.ivy.data.file.FileSystem
 import com.ivy.data.model.Transaction
 import com.ivy.data.model.getFromAccount
@@ -30,6 +31,7 @@ class ExportCsvUseCasePropertyTest {
     private val categoryRepository = mockk<CategoryRepository>(relaxed = true)
     private val transactionRepository = mockk<TransactionRepository>()
     private val fileSystem = mockk<FileSystem>()
+    private val timeConverter = TestTimeConverter()
 
     private lateinit var useCase: ExportCsvUseCase
 
@@ -41,6 +43,7 @@ class ExportCsvUseCasePropertyTest {
             transactionRepository = transactionRepository,
             dispatchers = TestDispatchersProvider,
             fileSystem = fileSystem,
+            timeConverter = timeConverter
         )
     }
 
@@ -53,7 +56,7 @@ class ExportCsvUseCasePropertyTest {
             }.map {
                 Arb.account(accountId = Some(it)).next()
             }
-            coEvery { accountRepository.findAll(any()) } returns accounts
+            coEvery { accountRepository.findAll() } returns accounts
             val categories = trns
                 .mapNotNull(Transaction::category)
                 .map {
@@ -65,7 +68,7 @@ class ExportCsvUseCasePropertyTest {
                         this
                     }
                 }
-            coEvery { categoryRepository.findAll(any()) } returns categories
+            coEvery { categoryRepository.findAll() } returns categories
 
             // when
             val csv = useCase.exportCsv { trns }

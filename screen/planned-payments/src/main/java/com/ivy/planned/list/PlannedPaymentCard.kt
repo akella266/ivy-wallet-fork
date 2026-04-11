@@ -1,5 +1,6 @@
 package com.ivy.planned.list
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import com.ivy.data.model.CategoryId
 import com.ivy.data.model.IntervalType
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
@@ -56,10 +58,11 @@ import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
+@SuppressLint("ComposeModifierMissing")
 @Composable
 fun LazyItemScope.PlannedPaymentCard(
     baseCurrency: String,
@@ -97,7 +100,9 @@ fun LazyItemScope.PlannedPaymentCard(
 
         RuleTextRow(
             oneTime = plannedPayment.oneTime,
-            startDate = plannedPayment.startDate,
+            startDate = with(LocalTimeConverter.current) {
+                plannedPayment.startDate?.toLocalDateTime()
+            },
             intervalN = plannedPayment.intervalN,
             intervalType = plannedPayment.intervalType
         )
@@ -275,9 +280,7 @@ private fun Preview_oneTime() {
                 color = ColorInt(Blue.toArgb()),
                 icon = null,
                 id = CategoryId(UUID.randomUUID()),
-                lastUpdated = Instant.EPOCH,
                 orderNum = 0.0,
-                removed = false,
             )
 
             item {
@@ -292,7 +295,7 @@ private fun Preview_oneTime() {
                         title = "Lidl pazar",
                         categoryId = food.id.value,
                         amount = 250.75,
-                        startDate = timeNowUTC().plusDays(5),
+                        startDate = timeNowUTC().plusDays(5).toInstant(ZoneOffset.UTC),
                         oneTime = true,
                         intervalType = null,
                         intervalN = null,
@@ -315,9 +318,7 @@ private fun Preview_recurring() {
                 color = ColorInt(Orange.toArgb()),
                 icon = null,
                 id = CategoryId(UUID.randomUUID()),
-                lastUpdated = Instant.EPOCH,
                 orderNum = 0.0,
-                removed = false,
             )
 
             item {
@@ -332,7 +333,7 @@ private fun Preview_recurring() {
                         title = "Tabu",
                         categoryId = shisha.id.value,
                         amount = 250.75,
-                        startDate = timeNowUTC().plusDays(5),
+                        startDate = timeNowUTC().plusDays(5).toInstant(ZoneOffset.UTC),
                         oneTime = false,
                         intervalType = IntervalType.MONTH,
                         intervalN = 1,
@@ -355,9 +356,7 @@ private fun Preview_recurringError() {
                 color = ColorInt(Orange.toArgb()),
                 icon = null,
                 id = CategoryId(UUID.randomUUID()),
-                lastUpdated = Instant.EPOCH,
                 orderNum = 0.0,
-                removed = false,
             )
 
             item {
@@ -372,7 +371,7 @@ private fun Preview_recurringError() {
                         title = "Tabu",
                         categoryId = shisha.id.value,
                         amount = 250.75,
-                        startDate = timeNowUTC().plusDays(5),
+                        startDate = timeNowUTC().plusDays(5).toInstant(ZoneOffset.UTC),
                         oneTime = false,
                         intervalType = null,
                         intervalN = null,

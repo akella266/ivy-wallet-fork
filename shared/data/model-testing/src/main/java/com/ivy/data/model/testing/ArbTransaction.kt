@@ -32,7 +32,6 @@ fun Arb.Companion.income(
     categoryId: Option<CategoryId?> = None,
     settled: Option<Boolean> = None,
     time: Option<ArbTime> = None,
-    removed: Option<Boolean> = Some(false),
     amount: Option<PositiveDouble> = None,
     asset: Option<AssetCode> = None,
     id: Option<TransactionId> = None
@@ -47,10 +46,9 @@ fun Arb.Companion.income(
         metadata = TransactionMetadata(
             recurringRuleId = null,
             loanId = null,
+            paidForDateTime = null,
             loanRecordId = null
         ),
-        lastUpdated = Instant.EPOCH,
-        removed = removed.getOrElse { Arb.boolean().bind() },
         tags = listOf(),
         value = Arb.value(amount, asset).bind(),
         account = accountId.getOrElse { Arb.accountId().bind() }
@@ -62,7 +60,6 @@ fun Arb.Companion.expense(
     categoryId: Option<CategoryId?> = None,
     settled: Option<Boolean> = None,
     time: Option<ArbTime> = None,
-    removed: Option<Boolean> = Some(false),
     amount: Option<PositiveDouble> = None,
     asset: Option<AssetCode> = None,
     id: Option<TransactionId> = None
@@ -77,10 +74,9 @@ fun Arb.Companion.expense(
         metadata = TransactionMetadata(
             recurringRuleId = null,
             loanId = null,
+            paidForDateTime = null,
             loanRecordId = null
         ),
-        lastUpdated = Instant.EPOCH,
-        removed = removed.getOrElse { Arb.boolean().bind() },
         tags = listOf(),
         value = Arb.value(amount, asset).bind(),
         account = accountId.getOrElse { Arb.accountId().bind() }
@@ -91,7 +87,6 @@ fun Arb.Companion.transfer(
     categoryId: Option<CategoryId?> = None,
     settled: Option<Boolean> = None,
     time: Option<ArbTime> = None,
-    removed: Option<Boolean> = Some(false),
     fromAccount: Option<AccountId> = None,
     fromAmount: Option<PositiveDouble> = None,
     fromAsset: Option<AssetCode> = None,
@@ -111,10 +106,9 @@ fun Arb.Companion.transfer(
         metadata = TransactionMetadata(
             recurringRuleId = null,
             loanId = null,
+            paidForDateTime = null,
             loanRecordId = null
         ),
-        lastUpdated = Instant.EPOCH,
-        removed = removed.getOrElse { Arb.boolean().bind() },
         tags = listOf(),
         fromValue = Arb.value(fromAmount, fromAsset).bind(),
         fromAccount = fromAccountVal,

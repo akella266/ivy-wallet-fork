@@ -67,6 +67,7 @@ import com.ivy.base.model.TransactionType
 import com.ivy.legacy.utils.rememberInteractionSource
 import com.ivy.legacy.utils.rememberSwipeListenerState
 import com.ivy.ui.R
+import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Gradient
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.GreenDark
@@ -93,7 +94,7 @@ import kotlin.math.roundToInt
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 const val SWIPE_UP_EXPANDED_THRESHOLD = 200
 
-@Suppress("LongMethod", "LongParameterList", "UnusedParameter")
+@Suppress("LongMethod", "LongParameterList", "UnusedParameter", "ParameterNaming")
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun BoxWithConstraintsScope.EditBottomSheet(
@@ -150,7 +151,15 @@ fun BoxWithConstraintsScope.EditBottomSheet(
 
     val showConvertedAmountText by remember(convertedAmount) {
         if (type == TransactionType.TRANSFER && convertedAmount != null && convertedAmountCurrencyCode != null) {
-            mutableStateOf("${convertedAmount.format(2)} $convertedAmountCurrencyCode")
+            mutableStateOf(
+                "${
+                    convertedAmount.format(
+                        IvyCurrency.getDecimalPlaces(
+                            convertedAmountCurrencyCode
+                        )
+                    )
+                } $convertedAmountCurrencyCode"
+            )
         } else {
             mutableStateOf(null)
         }
@@ -365,6 +374,7 @@ private fun BottomBar(
 }
 
 @Composable
+@Suppress("ParameterNaming", "MultipleEmitters")
 private fun TransferRowMini(
     percentCollapsed: Float,
     fromAccount: Account?,
@@ -438,6 +448,7 @@ private fun TransferRowMini(
 }
 
 @Composable
+@Suppress("ParameterNaming")
 private fun SheetHeader(
     percentExpanded: Float,
     label: String,
@@ -515,6 +526,7 @@ private fun SheetHeader(
 }
 
 @Composable
+@Suppress("ParameterNaming")
 private fun AccountsRow(
     accounts: List<Account>,
     selectedAccount: Account?,

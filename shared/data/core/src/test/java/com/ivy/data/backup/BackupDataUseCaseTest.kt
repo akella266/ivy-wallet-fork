@@ -10,9 +10,12 @@ import com.ivy.data.db.dao.fake.FakeLoanDao
 import com.ivy.data.db.dao.fake.FakeLoanRecordDao
 import com.ivy.data.db.dao.fake.FakePlannedPaymentDao
 import com.ivy.data.db.dao.fake.FakeSettingsDao
+import com.ivy.data.db.dao.fake.FakeTagAssociationDao
+import com.ivy.data.db.dao.fake.FakeTagDao
 import com.ivy.data.db.dao.fake.FakeTransactionDao
-import com.ivy.data.repository.fake.FakeAccountRepository
-import com.ivy.data.repository.fake.FakeCurrencyRepository
+import com.ivy.data.repository.AccountRepository
+import com.ivy.data.repository.CurrencyRepository
+import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
 import com.ivy.data.repository.mapper.AccountMapper
 import com.ivy.data.testResource
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -31,42 +34,53 @@ class BackupDataUseCaseTest {
         settingsDao: FakeSettingsDao = FakeSettingsDao(),
         loanDao: FakeLoanDao = FakeLoanDao(),
         loanRecordDao: FakeLoanRecordDao = FakeLoanRecordDao(),
-    ): BackupDataUseCase = BackupDataUseCase(
-        accountDao = accountDao,
-        accountMapper = AccountMapper(
-            FakeCurrencyRepository(
+        tagDao: FakeTagDao = FakeTagDao(),
+        tagAssociationDao: FakeTagAssociationDao = FakeTagAssociationDao()
+    ): BackupDataUseCase {
+        val accountMapper = AccountMapper(
+            CurrencyRepository(
                 settingsDao = settingsDao,
-                writeSettingsDao = settingsDao
+                writeSettingsDao = settingsDao,
+                dispatchersProvider = TestDispatchersProvider,
             )
-        ),
-        accountRepository = FakeAccountRepository(
+        )
+        return BackupDataUseCase(
             accountDao = accountDao,
-            writeAccountDao = accountDao,
+            accountMapper = accountMapper,
+            accountRepository = AccountRepository(
+                accountDao = accountDao,
+                writeAccountDao = accountDao,
+                mapper = accountMapper,
+                dispatchersProvider = TestDispatchersProvider,
+                memoFactory = fakeRepositoryMemoFactory(),
+            ),
+            budgetDao = budgetDao,
+            categoryDao = categoryDao,
+            loanRecordDao = loanRecordDao,
+            loanDao = loanDao,
+            plannedPaymentRuleDao = plannedPaymentDao,
+            transactionDao = transactionDao,
+            transactionWriter = transactionDao,
             settingsDao = settingsDao,
-            writeSettingsDao = settingsDao
-        ),
-        budgetDao = budgetDao,
-        categoryDao = categoryDao,
-        loanRecordDao = loanRecordDao,
-        loanDao = loanDao,
-        plannedPaymentRuleDao = plannedPaymentDao,
-        settingsDao = settingsDao,
-        transactionDao = transactionDao,
-        categoryWriter = categoryDao,
-        transactionWriter = transactionDao,
-        settingsWriter = settingsDao,
-        budgetWriter = budgetDao,
-        loanWriter = loanDao,
-        loanRecordWriter = loanRecordDao,
-        plannedPaymentRuleWriter = plannedPaymentDao,
+            categoryWriter = categoryDao,
+            settingsWriter = settingsDao,
+            budgetWriter = budgetDao,
+            loanWriter = loanDao,
+            loanRecordWriter = loanRecordDao,
+            plannedPaymentRuleWriter = plannedPaymentDao,
 
-        context = mockk(relaxed = true),
-        sharedPrefs = mockk(relaxed = true),
-        json = KotlinxSerializationModule.provideJson(),
-        dispatchersProvider = TestDispatchersProvider,
-        fileSystem = mockk(relaxed = true),
-        dataObserver = DataObserver(),
-    )
+            context = mockk(relaxed = true),
+            sharedPrefs = mockk(relaxed = true),
+            json = KotlinxSerializationModule.provideJson(),
+            dispatchersProvider = TestDispatchersProvider,
+            fileSystem = mockk(relaxed = true),
+            dataObserver = DataObserver(),
+            tagsReader = tagDao,
+            tagsWriter = tagDao,
+            tagAssociationReader = tagAssociationDao,
+            tagAssociationWriter = tagAssociationDao
+        )
+    }
 
     private suspend fun backupTestCase(backupVersion: String) {
         // given
@@ -90,7 +104,6 @@ class BackupDataUseCaseTest {
         // when
         val freshBackupUseCase = newBackupDataUseCase()
         val reImportedDataRes = freshBackupUseCase.importJson(exportedJson, onProgress = {})
-
         // then
         reImportedDataRes shouldBe importedDataRes
 

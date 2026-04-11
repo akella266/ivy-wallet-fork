@@ -36,18 +36,17 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
+@Suppress("ParameterNaming")
 @Composable
 fun ColumnScope.Title(
     type: TransactionType,
     titleFocus: FocusRequester,
     initialTransactionId: UUID?,
-
     titleTextFieldValue: TextFieldValue,
     setTitleTextFieldValue: (TextFieldValue) -> Unit,
     suggestions: Set<String>,
-    scrollState: ScrollState? = null,
-
     onTitleChanged: (String?) -> Unit,
+    scrollState: ScrollState? = null,
     onNext: () -> Unit,
 ) {
     IvyTitleTextField(

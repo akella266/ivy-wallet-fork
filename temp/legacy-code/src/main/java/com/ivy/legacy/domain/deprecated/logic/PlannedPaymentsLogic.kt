@@ -2,21 +2,22 @@ package com.ivy.wallet.domain.deprecated.logic
 
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
+import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.read.PlannedPaymentRuleDao
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
-import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.model.IntervalType
-import com.ivy.data.temp.migration.settleNow
+import com.ivy.data.model.TransactionId
 import com.ivy.data.repository.TransactionRepository
+import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.data.temp.migration.settleNow
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.PlannedPaymentRule
+import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
-import com.ivy.legacy.datamodel.toEntity
 import com.ivy.legacy.utils.ioThread
-import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.wallet.domain.deprecated.logic.currency.ExchangeRatesLogic
 import com.ivy.wallet.domain.deprecated.logic.currency.sumByDoublePlannedInBaseCurrency
 import javax.inject.Inject
@@ -28,9 +29,10 @@ class PlannedPaymentsLogic @Inject constructor(
     private val settingsDao: SettingsDao,
     private val exchangeRatesLogic: ExchangeRatesLogic,
     private val accountDao: AccountDao,
-    private val transactionWriter: WriteTransactionDao,
+    private val transactionMapper: TransactionMapper,
     private val plannedPaymentRuleWriter: WritePlannedPaymentRuleDao,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val timeProvider: TimeProvider,
 ) {
     companion object {
         private const val AVG_DAYS_IN_MONTH = 30.436875
@@ -165,8 +167,9 @@ class PlannedPaymentsLogic @Inject constructor(
         if (transaction.dueDate == null || transaction.dateTime != null) return
 
         val paidTransaction = transaction.copy(
+            paidFor = transaction.dueDate,
             dueDate = null,
-            dateTime = timeNowUTC(),
+            dateTime = timeProvider.utcNow(),
             isSynced = false,
         )
 
@@ -178,14 +181,16 @@ class PlannedPaymentsLogic @Inject constructor(
 
         ioThread {
             if (skipTransaction) {
-                transactionWriter.flagDeleted(paidTransaction.id)
+                transactionRepository.deleteById(TransactionId(paidTransaction.id))
             } else {
-                transactionWriter.save(paidTransaction.toEntity())
+                paidTransaction.toDomain(transactionMapper)?.let {
+                    transactionRepository.save(it)
+                }
             }
 
             if (plannedPaymentRule != null && plannedPaymentRule.oneTime) {
                 // delete paid oneTime planned payment rules
-                plannedPaymentRuleWriter.flagDeleted(plannedPaymentRule.id)
+                plannedPaymentRuleWriter.deleteById(plannedPaymentRule.id)
             }
         }
 
@@ -210,14 +215,14 @@ class PlannedPaymentsLogic @Inject constructor(
 
         ioThread {
             if (skipTransaction) {
-                transactionRepository.flagDeleted(paidTransaction.id)
+                transactionRepository.deleteById(paidTransaction.id)
             } else {
                 transactionRepository.save(paidTransaction)
             }
 
             if (plannedPaymentRule != null && plannedPaymentRule.oneTime) {
                 // delete paid oneTime planned payment rules
-                plannedPaymentRuleWriter.flagDeleted(plannedPaymentRule.id)
+                plannedPaymentRuleWriter.deleteById(plannedPaymentRule.id)
             }
         }
 
@@ -250,7 +255,7 @@ class PlannedPaymentsLogic @Inject constructor(
         ioThread {
             if (skipTransaction) {
                 paidTransactions.forEach { paidTransaction ->
-                    transactionRepository.flagDeleted(paidTransaction.id)
+                    transactionRepository.deleteById(paidTransaction.id)
                 }
             } else {
                 paidTransactions.forEach { paidTransaction ->
@@ -261,7 +266,7 @@ class PlannedPaymentsLogic @Inject constructor(
             plannedPaymentRules.forEach { plannedPaymentRule ->
                 if (plannedPaymentRule != null && plannedPaymentRule.oneTime) {
                     // delete paid oneTime planned payment rules
-                    plannedPaymentRuleWriter.flagDeleted(plannedPaymentRule.id)
+                    plannedPaymentRuleWriter.deleteById(plannedPaymentRule.id)
                 }
             }
         }
@@ -284,7 +289,7 @@ class PlannedPaymentsLogic @Inject constructor(
         paidTransactions.map {
             it.copy(
                 dueDate = null,
-                dateTime = timeNowUTC(),
+                dateTime = timeProvider.utcNow(),
                 isSynced = false
             )
         }
@@ -300,18 +305,20 @@ class PlannedPaymentsLogic @Inject constructor(
         ioThread {
             if (skipTransaction) {
                 paidTransactions.forEach { paidTransaction ->
-                    transactionWriter.flagDeleted(paidTransaction.id)
+                    transactionRepository.deleteById(TransactionId(paidTransaction.id))
                 }
             } else {
                 paidTransactions.forEach { paidTransaction ->
-                    transactionWriter.save(paidTransaction.toEntity())
+                    paidTransaction.toDomain(transactionMapper)?.let {
+                        transactionRepository.save(it)
+                    }
                 }
             }
 
             plannedPaymentRules.forEach { plannedPaymentRule ->
                 if (plannedPaymentRule != null && plannedPaymentRule.oneTime) {
                     // delete paid oneTime planned payment rules
-                    plannedPaymentRuleWriter.flagDeleted(plannedPaymentRule.id)
+                    plannedPaymentRuleWriter.deleteById(plannedPaymentRule.id)
                 }
             }
         }

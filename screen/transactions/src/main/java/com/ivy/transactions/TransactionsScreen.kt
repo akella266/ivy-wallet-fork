@@ -40,6 +40,9 @@ import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.legacy.stringRes
 import com.ivy.base.model.TransactionType
 import com.ivy.data.model.Category
+import com.ivy.design.api.LocalTimeConverter
+import com.ivy.design.api.LocalTimeFormatter
+import com.ivy.design.api.LocalTimeProvider
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.utils.thenIf
@@ -134,6 +137,7 @@ fun BoxWithConstraintsScope.TransactionsScreen(screen: TransactionsScreen) {
         treatTransfersAsIncomeExpense = uiState.treatTransfersAsIncomeExpense,
 
         history = uiState.history,
+        shouldShowAccountSpecificColorInTransactions = uiState.showAccountColorsInTransactions,
 
         upcoming = uiState.upcoming,
         upcomingExpanded = uiState.upcomingExpanded,
@@ -228,6 +232,7 @@ private fun BoxWithConstraintsScope.UI(
     choosePeriodModal: ChoosePeriodModalData?,
 
     history: ImmutableList<TransactionHistoryItem>,
+    shouldShowAccountSpecificColorInTransactions: Boolean,
 
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
@@ -286,6 +291,9 @@ private fun BoxWithConstraintsScope.UI(
         )
         val density = LocalDensity.current
 
+        val timeProvider = LocalTimeProvider.current
+        val timeConverter = LocalTimeConverter.current
+        val timeFormatter = LocalTimeFormatter.current
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -413,8 +421,14 @@ private fun BoxWithConstraintsScope.UI(
                 emptyStateTitle = stringRes(R.string.no_transactions),
                 emptyStateText = stringRes(
                     R.string.no_transactions_for_period,
-                    period.toDisplayLong(ivyContext.startDayOfMonth)
-                )
+                    period.toDisplayLong(
+                        startDateOfMonth = ivyContext.startDayOfMonth,
+                        timeProvider = timeProvider,
+                        timeConverter = timeConverter,
+                        timeFormatter = timeFormatter,
+                    )
+                ),
+                shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions
             )
         }
     }
@@ -553,6 +567,7 @@ private fun BoxWithConstraintsScope.DeleteModals(
     ) {
         onDelete()
         updateAccountNameConfirmation("")
+        setDeleteModal1Visible(false)
     }
 
     DeleteModal(
@@ -845,6 +860,7 @@ private fun BoxWithConstraintsScope.Preview_empty() {
             onChoosePeriodModal = {},
             choosePeriodModal = null,
             screen = TransactionsScreen(),
+            shouldShowAccountSpecificColorInTransactions = false
         )
     }
 }
@@ -891,6 +907,7 @@ private fun BoxWithConstraintsScope.Preview_crypto() {
             onChoosePeriodModal = {},
             choosePeriodModal = null,
             screen = TransactionsScreen(),
+            shouldShowAccountSpecificColorInTransactions = false
         )
     }
 }
@@ -937,6 +954,7 @@ private fun BoxWithConstraintsScope.Preview_empty_upcoming() {
             onChoosePeriodModal = {},
             choosePeriodModal = null,
             screen = TransactionsScreen(),
+            shouldShowAccountSpecificColorInTransactions = false
         )
     }
 }

@@ -4,16 +4,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewModelScope
 import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Transaction
-import com.ivy.ui.ComposeViewModel
+import com.ivy.base.time.TimeConverter
+import com.ivy.base.time.TimeProvider
 import com.ivy.data.repository.CategoryRepository
+import com.ivy.domain.features.Features
 import com.ivy.frp.action.thenMap
 import com.ivy.frp.thenInvokeAfter
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.utils.ioThread
+import com.ivy.ui.ComposeViewModel
 import com.ivy.wallet.domain.action.account.AccountsAct
 import com.ivy.wallet.domain.action.category.LegacyCategoryIncomeWithAccountFiltersAct
 import com.ivy.wallet.domain.action.settings.BaseCurrencyAct
@@ -44,11 +48,15 @@ class CategoriesViewModel @Inject constructor(
     private val accountsAct: AccountsAct,
     private val trnsWithRangeAndAccFiltersAct: TrnsWithRangeAndAccFiltersAct,
     private val categoryIncomeWithAccountFiltersAct: LegacyCategoryIncomeWithAccountFiltersAct,
+    private val features: Features,
+    private val timeProvider: TimeProvider,
+    private val timeConverter: TimeConverter,
 ) : ComposeViewModel<CategoriesScreenState, CategoriesScreenEvent>() {
 
     private val baseCurrency = mutableStateOf("")
     private val categories =
         mutableStateOf<ImmutableList<CategoryData>>(persistentListOf<CategoryData>())
+    private val searchQuery = mutableStateOf("")
     private val reorderModalVisible = mutableStateOf(false)
     private val categoryModalData = mutableStateOf<CategoryModalData?>(null)
     private val sortModalVisible = mutableStateOf(false)
@@ -66,8 +74,20 @@ class CategoriesViewModel @Inject constructor(
             reorderModalVisible = getReorderModalVisible(),
             categoryModalData = getCategoryModalData(),
             sortOrder = getSortOrder(),
-            sortModalVisible = getSortModalVisible()
+            sortModalVisible = getSortModalVisible(),
+            compactCategoriesModeEnabled = getCompactCategoriesMode(),
+            showCategorySearchBar = getShowCategorySearchBar()
         )
+    }
+
+    @Composable
+    private fun getCompactCategoriesMode(): Boolean {
+        return features.compactCategoriesMode.asEnabledState()
+    }
+
+    @Composable
+    private fun getShowCategorySearchBar(): Boolean {
+        return features.showCategorySearchBar.asEnabledState()
     }
 
     @Composable
@@ -77,7 +97,12 @@ class CategoriesViewModel @Inject constructor(
 
     @Composable
     private fun getCategories(): ImmutableList<CategoryData> {
-        return categories.value
+        val allCats = categories.value
+        return remember(allCats, searchQuery.value) {
+            allCats.filter {
+                searchQuery.value.lowercase().trim() in it.category.name.toString().lowercase()
+            }.toImmutableList()
+        }
     }
 
     @Composable
@@ -114,7 +139,11 @@ class CategoriesViewModel @Inject constructor(
         ioThread {
             val range = TimePeriod.currentMonth(
                 startDayOfMonth = ivyContext.startDayOfMonth
-            ).toRange(ivyContext.startDayOfMonth) // this must be monthly
+            ).toRange(
+                ivyContext.startDayOfMonth,
+                timeConverter,
+                timeProvider
+            ) // this must be monthly
 
             allAccounts = accountsAct(Unit)
             baseCurrency.value = baseCurrencyAct(Unit)
@@ -123,7 +152,7 @@ class CategoriesViewModel @Inject constructor(
                 TrnsWithRangeAndAccFiltersAct.Input(
                     range = range,
                     accountIdFilterSet = suspend { allAccounts } thenMap { it.id }
-                        thenInvokeAfter { it.toHashSet() }
+                            thenInvokeAfter { it.toHashSet() }
                 )
             )
 
@@ -159,9 +188,12 @@ class CategoriesViewModel @Inject constructor(
             }
 
             val sortedList = sortList(categories, sortOrder.value).toImmutableList()
-
             this.categories.value = sortedList
         }
+    }
+
+    private fun updateSearchQuery(queryString: String) {
+        searchQuery.value = queryString
     }
 
     private suspend fun reorder(
@@ -232,6 +264,8 @@ class CategoriesViewModel @Inject constructor(
                 is CategoriesScreenEvent.OnCategoryModalVisible -> {
                     categoryModalData.value = event.categoryModalData
                 }
+
+                is CategoriesScreenEvent.OnSearchQueryUpdate -> updateSearchQuery(event.queryString)
             }
         }
     }

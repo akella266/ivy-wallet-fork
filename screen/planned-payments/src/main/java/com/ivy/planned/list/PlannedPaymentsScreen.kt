@@ -13,7 +13,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.base.model.TransactionType
-import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.IntervalType
@@ -31,10 +30,11 @@ import com.ivy.navigation.PlannedPaymentsScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
+import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.Orange
 import kotlinx.collections.immutable.persistentListOf
-import java.time.Instant
+import java.time.ZoneOffset
 import java.util.UUID
 
 @Composable
@@ -114,18 +114,14 @@ private fun Preview() {
             color = ColorInt(Purple.toArgb()),
             icon = null,
             id = CategoryId(UUID.randomUUID()),
-            lastUpdated = Instant.EPOCH,
             orderNum = 0.0,
-            removed = false,
         )
         val shisha = Category(
             name = NotBlankTrimmedString.unsafe("Shisha"),
             color = ColorInt(Orange.toArgb()),
             icon = null,
             id = CategoryId(UUID.randomUUID()),
-            lastUpdated = Instant.EPOCH,
             orderNum = 0.0,
-            removed = false,
         )
 
         UI(
@@ -139,7 +135,7 @@ private fun Preview() {
                         title = "Lidl pazar",
                         categoryId = food.id.value,
                         amount = 250.75,
-                        startDate = timeNowUTC().plusDays(5),
+                        startDate = timeNowUTC().plusDays(5).toInstant(ZoneOffset.UTC),
                         oneTime = true,
                         intervalType = null,
                         intervalN = null,
@@ -154,7 +150,7 @@ private fun Preview() {
                         title = "Tabu",
                         categoryId = shisha.id.value,
                         amount = 1025.5,
-                        startDate = timeNowUTC().plusDays(5),
+                        startDate = timeNowUTC().plusDays(5).toInstant(ZoneOffset.UTC),
                         oneTime = false,
                         intervalType = IntervalType.MONTH,
                         intervalN = 1,

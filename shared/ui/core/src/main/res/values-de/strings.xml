@@ -25,7 +25,9 @@
     <string name="app_budget">%1$s %2$s App-Budget</string>
     <string name="budget_info_both">Budget-Infos: %1$s / %2$s</string>
     <string name="budget_info">Budget-Infos: %1$s%2$s</string>
+    <string name="total_budget_info">Gesamtes verbleibendes Budget: %1$s %2$s</string>
     <string name="add_category">Kategorie hinzufügen</string>
+    <string name="add_manual_exchange_rate">Add rate</string>
     <string name="expenses">Ausgaben</string>
     <string name="expenses_count">Ausgabenzählung</string>
     <string name="income">Einnahmen</string>
@@ -446,7 +448,7 @@
     <string name="decrease_loan">Verringern</string>
     <string name="msg_select_account_to_transfer">Wähle das Ziel für den Übertrag</string>
     <string name="msg_source_account_destination_account_same_for_transfer">Wählen ein anders Ziel-Konto für den Übertrag</string>
-    <string name="others_optional">Andere (optional)</string>
+    <string name="tags_optional">Tags (optional)</string>
     <string name="tags">Tags</string>
     <string name="search_tags">Tags durchsuchen</string>
     <string name="exchange_rates">Wechselkurse</string>
@@ -487,4 +489,6 @@
     <string name="import_csv_continue">Fortsetzen</string>
     <string name="warning_import_csv_file">" !!!⚠️ACHTUNG: Ein Import kann zu doppelten Einträgen führen!!! Ivy Wallet kann diese NICHT automatisch entfernt und alle Einträge müssen manuell geprüft werden! Wenn du noch keine Einträge erfasst hast, kannst du diese Meldung ignorieren."</string>
     <string name="select_tags">Tags auswählen</string>
+    <string name="language">Sprache</string>
+    <string name="budget_exceeded_info">Budget überschritten um %1$s %2$s</string>
 </resources>

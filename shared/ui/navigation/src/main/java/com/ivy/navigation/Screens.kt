@@ -44,7 +44,10 @@ data class TransactionsScreen(
     val transactionType: TransactionType? = null,
     val accountIdFilterList: List<UUID> = persistentListOf(),
     val transactions: List<Transaction> = persistentListOf()
-) : Screen
+) : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}
 
 data class PieChartStatisticScreen(
     val type: TransactionType,
@@ -71,7 +74,7 @@ data class EditPlannedScreen(
 
     fun mandatoryFilled(): Boolean {
         return amount != null && amount > 0.0 &&
-            accountId != null
+                accountId != null
     }
 }
 

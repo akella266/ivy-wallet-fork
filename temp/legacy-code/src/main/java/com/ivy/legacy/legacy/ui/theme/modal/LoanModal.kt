@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.data.model.LoanType
+import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.domain.legacy.ui.IvyColorPicker
@@ -48,7 +50,7 @@ import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.legacy.utils.selectEndTextFieldValue
 import com.ivy.design.utils.thenIf
-import com.ivy.legacy.utils.timeNowUTC
+import com.ivy.legacy.legacy.ui.theme.modal.ModalNameInput
 import com.ivy.ui.R
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
@@ -67,6 +69,7 @@ import com.ivy.wallet.ui.theme.modal.edit.AmountModal
 import com.ivy.wallet.ui.theme.modal.edit.IconNameRow
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -81,24 +84,29 @@ data class LoanModalData(
     val id: UUID = UUID.randomUUID()
 )
 
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 @Composable
 fun BoxWithConstraintsScope.LoanModal(
-    accounts: List<Account> = emptyList(),
-    onCreateAccount: (CreateAccountData) -> Unit = {},
-
     modal: LoanModalData?,
+    dateTime: Instant,
+    onSetDate: () -> Unit,
+    onSetTime: () -> Unit,
     onCreateLoan: (CreateLoanData) -> Unit,
     onEditLoan: (Loan, Boolean) -> Unit,
+    accounts: List<Account> = emptyList(),
+    onCreateAccount: (CreateAccountData) -> Unit = {},
     onPerformCalculations: () -> Unit = {},
     dismiss: () -> Unit,
 ) {
     val loan = modal?.loan
+    val timeConverter = LocalTimeConverter.current
+
     var nameTextFieldValue by remember(modal) {
         mutableStateOf(selectEndTextFieldValue(loan?.name))
     }
-    var dateTime by remember(modal) {
-        mutableStateOf(modal?.loan?.dateTime ?: timeNowUTC())
+    var dateTime = modal?.loan?.dateTime ?: with(timeConverter) {
+        dateTime.toLocalDateTime()
     }
     var type by remember(modal) {
         mutableStateOf(modal?.loan?.type ?: LoanType.BORROW)
@@ -111,6 +119,9 @@ fun BoxWithConstraintsScope.LoanModal(
     }
     var icon by remember(modal) {
         mutableStateOf(loan?.icon)
+    }
+    var noteTextFieldValue by remember(modal) {
+        mutableStateOf(selectEndTextFieldValue(loan?.note))
     }
     var currencyCode by remember(modal) {
         mutableStateOf(modal?.baseCurrency ?: "")
@@ -155,6 +166,7 @@ fun BoxWithConstraintsScope.LoanModal(
                         loan = loan,
                         nameTextFieldValue = nameTextFieldValue,
                         dateTime = dateTime,
+                        noteTextFieldValue = noteTextFieldValue,
                         type = type,
                         color = color,
                         icon = icon,
@@ -203,9 +215,8 @@ fun BoxWithConstraintsScope.LoanModal(
 
         DateTimeRow(
             dateTime = dateTime,
-            onSetDateTime = {
-                dateTime = it
-            }
+            onEditDate = onSetDate,
+            onEditTime = onSetTime
         )
 
         Spacer(Modifier.height(24.dp))
@@ -220,6 +231,28 @@ fun BoxWithConstraintsScope.LoanModal(
         IvyColorPicker(
             selectedColor = color,
             onColorSelected = { color = it }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            modifier = Modifier.padding(horizontal = 32.dp),
+            text = stringResource(R.string.note),
+            style = UI.typo.b2.style(
+                color = UI.colors.pureInverse,
+                fontWeight = FontWeight.ExtraBold
+            )
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        ModalNameInput(
+            hint = stringResource(R.string.description_text_field_hint),
+            autoFocusKeyboard = false,
+            textFieldValue = noteTextFieldValue,
+            setTextFieldValue = {
+                noteTextFieldValue = it
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -333,6 +366,7 @@ fun BoxWithConstraintsScope.LoanModal(
             loan = loan,
             nameTextFieldValue = nameTextFieldValue,
             dateTime = dateTime,
+            noteTextFieldValue = noteTextFieldValue,
             type = type,
             color = color,
             icon = icon,
@@ -349,6 +383,7 @@ fun BoxWithConstraintsScope.LoanModal(
 }
 
 @Composable
+@Suppress("ParameterNaming")
 private fun AccountsRow(
     modifier: Modifier = Modifier,
     accounts: List<Account>,
@@ -492,6 +527,7 @@ private fun AddAccount(
     Spacer(Modifier.width(8.dp))
 }
 
+@Suppress("ParameterNaming")
 @Composable
 private fun ColumnScope.LoanTypePicker(
     type: LoanType,
@@ -569,6 +605,7 @@ private fun save(
     loan: Loan?,
     nameTextFieldValue: TextFieldValue,
     dateTime: LocalDateTime,
+    noteTextFieldValue: TextFieldValue,
     type: LoanType,
     color: Color,
     icon: String?,
@@ -585,6 +622,7 @@ private fun save(
             loan.copy(
                 name = nameTextFieldValue.text.trim(),
                 dateTime = dateTime,
+                note = NotBlankTrimmedString.from(noteTextFieldValue.text).getOrNull()?.value,
                 type = type,
                 amount = amount,
                 color = color.toArgb(),
@@ -603,7 +641,8 @@ private fun save(
                 icon = icon,
                 account = selectedAccount,
                 createLoanTransaction = createLoanTransaction,
-                dateTime = dateTime
+                dateTime = dateTime,
+                note = NotBlankTrimmedString.from(noteTextFieldValue.text).getOrNull()?.value
             )
         )
     }
@@ -621,7 +660,10 @@ private fun Preview() {
                 baseCurrency = "BGN",
             ),
             onCreateLoan = { },
-            onEditLoan = { _, _ -> }
+            onEditLoan = { _, _ -> },
+            onSetTime = { },
+            onSetDate = { },
+            dateTime = Instant.now()
         ) {
         }
     }

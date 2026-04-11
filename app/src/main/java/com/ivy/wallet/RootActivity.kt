@@ -26,42 +26,41 @@ import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.tasks.Task
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.ivy.IvyNavGraph
+import com.ivy.base.legacy.Theme
+import com.ivy.base.time.TimeConverter
+import com.ivy.base.time.TimeProvider
+import com.ivy.design.api.IvyDesign
 import com.ivy.design.api.IvyUI
+import com.ivy.design.system.IvyMaterial3Theme
 import com.ivy.domain.RootScreen
 import com.ivy.home.customerjourney.CustomerJourneyCardsProvider
 import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.appDesign
 import com.ivy.legacy.utils.activityForResultLauncher
-import com.ivy.legacy.utils.convertLocalToUTC
 import com.ivy.legacy.utils.sendToCrashlytics
 import com.ivy.legacy.utils.simpleActivityForResultLauncher
-import com.ivy.legacy.utils.timeNowLocal
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.NavigationRoot
 import com.ivy.ui.R
+import com.ivy.ui.time.TimeFormatter
+import com.ivy.ui.time.impl.DateTimePicker
 import com.ivy.wallet.ui.applocked.AppLockedScreen
 import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import com.ivy.widget.transaction.AddTransactionWidget
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
 import dagger.hilt.android.AndroidEntryPoint
-import timber.log.Timber
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
 
 @AndroidEntryPoint
+@Suppress("TooManyFunctions")
 class RootActivity : AppCompatActivity(), RootScreen {
     @Inject
     lateinit var ivyContext: IvyWalletCtx
@@ -72,8 +71,17 @@ class RootActivity : AppCompatActivity(), RootScreen {
     @Inject
     lateinit var customerJourneyLogic: CustomerJourneyCardsProvider
 
-    private lateinit var googleSignInLauncher: ActivityResultLauncher<GoogleSignInClient>
-    private lateinit var onGoogleSignInIdTokenResult: (idToken: String?) -> Unit
+    @Inject
+    lateinit var timeConverter: TimeConverter
+
+    @Inject
+    lateinit var timeProvider: TimeProvider
+
+    @Inject
+    lateinit var timeFormatter: TimeFormatter
+
+    @Inject
+    lateinit var dateTimePicker: DateTimePicker
 
     private lateinit var createFileLauncher: ActivityResultLauncher<String>
     private lateinit var onFileCreated: (fileUri: Uri) -> Unit
@@ -83,26 +91,11 @@ class RootActivity : AppCompatActivity(), RootScreen {
 
     private val viewModel: RootViewModel by viewModels()
 
-    @OptIn(
-        ExperimentalAnimationApi::class,
-        ExperimentalFoundationApi::class
-    )
+    @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-
-        setupActivityForResultLaunchers()
-
-        // Make the app drawing area fullscreen (draw behind status and nav bars)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        setupDatePicker()
-        setupTimePicker()
-
-        AddTransactionWidget.updateBroadcast(this)
-        AddTransactionWidgetCompact.updateBroadcast(this)
-        WalletBalanceWidgetReceiver.updateBroadcast(this)
-
+        setupApp()
         setContent {
             val viewModel: RootViewModel = viewModel()
             val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -113,13 +106,14 @@ class RootActivity : AppCompatActivity(), RootScreen {
 
             val appLocked by viewModel.appLocked.collectAsState()
             when (appLocked) {
-                null -> {
-                    // display nothing
+                null -> { // display nothing
                 }
-
                 true -> {
                     IvyUI(
-                        design = appDesign(ivyContext)
+                        design = appDesign(ivyContext),
+                        timeConverter = timeConverter,
+                        timeProvider = timeProvider,
+                        timeFormatter = timeFormatter,
                     ) {
                         AppLockedScreen(
                             onShowOSBiometricsModal = {
@@ -138,14 +132,37 @@ class RootActivity : AppCompatActivity(), RootScreen {
                     NavigationRoot(navigation = navigation) { screen ->
                         IvyUI(
                             design = appDesign(ivyContext),
-                            includeSurface = screen?.isLegacy ?: true
+                            includeSurface = screen?.isLegacy ?: true,
+                            timeConverter = timeConverter,
+                            timeProvider = timeProvider,
+                            timeFormatter = timeFormatter,
                         ) {
                             IvyNavGraph(screen)
                         }
                     }
                 }
             }
+
+            IvyMaterial3Theme(
+                dark = isDarkThemeEnabled(
+                    ivyDesign = appDesign(ivyContext),
+                    systemDarkTheme = isSystemInDarkTheme
+                ),
+                isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK
+            ) {
+                dateTimePicker.Content()
+            }
         }
+    }
+
+    private fun setupApp() {
+        setupActivityForResultLaunchers()
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        setupDatePicker()
+        setupTimePicker()
+        AddTransactionWidget.updateBroadcast(this)
+        AddTransactionWidgetCompact.updateBroadcast(this)
+        WalletBalanceWidgetReceiver.updateBroadcast(this)
     }
 
     private companion object {
@@ -154,12 +171,18 @@ class RootActivity : AppCompatActivity(), RootScreen {
 
     private fun setupDatePicker() {
         ivyContext.onShowDatePicker = { minDate,
-                maxDate,
-                initialDate,
-                onDatePicked ->
+                                        maxDate,
+                                        initialDate,
+                                        onDatePicked ->
             val datePicker =
                 MaterialDatePicker.Builder.datePicker()
-                    .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                    .setSelection(
+                        if (initialDate != null) {
+                            initialDate.toEpochDay() * MILLISECONDS_IN_DAY
+                        } else {
+                            MaterialDatePicker.todayInUtcMilliseconds()
+                        }
+                    )
                     .build()
             datePicker.show(supportFragmentManager, "datePicker")
             datePicker.addOnPositiveButtonClickListener {
@@ -187,61 +210,40 @@ class RootActivity : AppCompatActivity(), RootScreen {
     }
 
     private fun setupTimePicker() {
-        ivyContext.onShowTimePicker = { onTimePicked ->
-            val nowLocal = timeNowLocal()
+        ivyContext.onShowTimePicker = { initialTime,
+                                        onTimePicked ->
+            val nowLocal = initialTime ?: timeProvider.localTimeNow()
+            val is24Hour = android.text.format.DateFormat.is24HourFormat(this)
+            val timeFormat = if (is24Hour) TimeFormat.CLOCK_24H else TimeFormat.CLOCK_12H
+
             val picker =
                 MaterialTimePicker.Builder()
-                    .setTimeFormat(TimeFormat.CLOCK_12H)
+                    .setTimeFormat(timeFormat)
                     .setHour(nowLocal.hour)
                     .setMinute(nowLocal.minute)
                     .build()
             picker.show(supportFragmentManager, "timePicker")
             picker.addOnPositiveButtonClickListener {
-                onTimePicked(LocalTime.of(picker.hour, picker.minute).convertLocalToUTC().withSecond(0))
+                onTimePicked(
+                    LocalTime.of(picker.hour, picker.minute).withSecond(0)
+                )
             }
+        }
+    }
+
+    private fun isDarkThemeEnabled(ivyDesign: IvyDesign, systemDarkTheme: Boolean): Boolean {
+        return when (ivyDesign.context().theme) {
+            Theme.LIGHT -> false
+            Theme.DARK -> true
+            Theme.AMOLED_DARK -> true
+            else -> systemDarkTheme
         }
     }
 
     private fun setupActivityForResultLaunchers() {
-        googleSignInLauncher()
-
         createFileLauncher()
 
         openFileLauncher()
-    }
-
-    private fun googleSignInLauncher() {
-        googleSignInLauncher = activityForResultLauncher(
-            createIntent = { _, client ->
-                client.signInIntent
-            }
-        ) { _, intent ->
-            try {
-                val task: Task<GoogleSignInAccount> =
-                    GoogleSignIn.getSignedInAccountFromIntent(intent)
-                val account: GoogleSignInAccount = task.getResult(ApiException::class.java)
-                val idToken = account.idToken
-                Timber.d("idToken = $idToken")
-
-                onGoogleSignInIdTokenResult(idToken)
-            } catch (e: ApiException) {
-                e.sendToCrashlytics("GOOGLE_SIGN_IN - registerGoogleSignInContract(): ApiException")
-                e.printStackTrace()
-                onGoogleSignInIdTokenResult(null)
-            }
-        }
-
-        ivyContext.googleSignIn = { idTokenResult: (String?) -> Unit ->
-            onGoogleSignInIdTokenResult = idTokenResult
-
-            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .requestProfile()
-                .requestIdToken("364763737033-t1d2qe7s0s8597k7anu3sb2nq79ot5tp.apps.googleusercontent.com")
-                .build()
-            val googleSignInClient = GoogleSignIn.getClient(this, gso)
-            googleSignInLauncher.launch(googleSignInClient)
-        }
     }
 
     private fun createFileLauncher() {
@@ -338,7 +340,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
             )
             .setAllowedAuthenticators(
                 BiometricManager.Authenticators.BIOMETRIC_WEAK or
-                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                        BiometricManager.Authenticators.DEVICE_CREDENTIAL
             )
             .setConfirmationRequired(false)
             .build()
@@ -356,6 +358,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught", "PrintStackTrace")
     override fun openUrlInBrowser(url: String) {
         try {
             val browserIntent = Intent(Intent.ACTION_VIEW)
@@ -384,6 +387,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
         startActivity(share)
     }
 
+    @Suppress("SwallowedException")
     override fun openGooglePlayAppPage(appId: String) {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appId")))
@@ -435,16 +439,18 @@ class RootActivity : AppCompatActivity(), RootScreen {
             if (task.isSuccessful) {
                 // We got the ReviewInfo object
                 val reviewInfo = task.result
-                val flow = manager.launchReviewFlow(this, reviewInfo)
-                flow.addOnCompleteListener {
-                    // The flow has finished. The API does not indicate whether the user
-                    // reviewed or not, or even whether the review dialog was shown. Thus, no
-                    // matter the result, we continue our app flow.
-                    if (dismissReviewCard) {
-                        customerJourneyLogic.dismissCard(CustomerJourneyCardsProvider.rateUsCard())
-                    }
+                reviewInfo.let { review ->
+                    val flow = manager.launchReviewFlow(this, review!!)
+                    flow.addOnCompleteListener {
+                        // The flow has finished. The API does not indicate whether the user
+                        // reviewed or not, or even whether the review dialog was shown. Thus, no
+                        // matter the result, we continue our app flow.
+                        if (dismissReviewCard) {
+                            customerJourneyLogic.dismissCard(CustomerJourneyCardsProvider.rateUsCard())
+                        }
 
-                    openGooglePlayAppPage(packageName)
+                        openGooglePlayAppPage(packageName)
+                    }
                 }
             } else {
                 openGooglePlayAppPage(packageName)
