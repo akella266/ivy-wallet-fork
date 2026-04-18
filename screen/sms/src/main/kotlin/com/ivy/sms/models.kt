@@ -9,7 +9,7 @@ sealed interface SmsListItem {
     data class Sms(
         val id: String,
         val cardLastDigits: String,
-        val date: Instant,
+        val date: String,
         val amount: Double,
         val consumer: String,
         val isProcessed: Boolean = false,

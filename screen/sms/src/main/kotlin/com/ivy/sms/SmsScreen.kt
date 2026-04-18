@@ -280,7 +280,7 @@ private fun SmsTransactionItem(
         Spacer(Modifier.height(20.dp))
         Text(
             modifier = Modifier.padding(horizontal = 24.dp),
-            text = smsModel.date.formatNicelyWithTime().uppercase(),
+            text = smsModel.date.uppercase(),
             style = UI.typo.nC.style(
                 color = Gray,
                 fontWeight = FontWeight.Bold
@@ -338,7 +338,7 @@ private fun PreviewItems() {
                     SmsListItem.Sms(
                         id = "1234",
                         cardLastDigits = "3456",
-                        date = Clock.System.now(),
+                        date = "12.03.1997",
                         amount = 123.45,
                         consumer = "ATM PBT",
                         isProcessed = true

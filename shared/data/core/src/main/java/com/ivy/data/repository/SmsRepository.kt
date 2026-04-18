@@ -2,8 +2,9 @@ package com.ivy.data.repository
 
 import com.ivy.data.model.SmsModel
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
+import javax.inject.Singleton
 
+@Singleton
 interface SmsRepository {
 
     suspend fun readSms(fromDate: Instant): List<SmsModel>

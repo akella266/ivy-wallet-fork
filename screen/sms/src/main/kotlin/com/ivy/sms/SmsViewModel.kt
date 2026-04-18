@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.format
@@ -112,14 +112,21 @@ internal class SmsViewModel @Inject constructor(
         val smsSeparatedByDate = models.groupBy(
             keySelector = { smsModel -> smsModel.date.format(dateFormater) },
             valueTransform = { smsModel ->
-                SmsListItem.Sms(
-                    smsModel.id,
-                    smsModel.cardLastDigits,
-                    smsModel.date,
-                    smsModel.amount,
-                    smsModel.consumer,
-                    isProcessed = smsModel.isProcessed
-                )
+                    SmsListItem.Sms(
+                        smsModel.id,
+                        smsModel.cardLastDigits,
+                        smsModel.date.toLocalDateTime(TimeZone.currentSystemDefault())
+                            .format(LocalDateTime.Format {
+                                dayOfMonth()
+                                char('.')
+                                monthNumber()
+                                char('.')
+                                year()
+                            }),
+                        smsModel.amount,
+                        smsModel.consumer,
+                        isProcessed = smsModel.isProcessed
+                    )
             }
         )
 

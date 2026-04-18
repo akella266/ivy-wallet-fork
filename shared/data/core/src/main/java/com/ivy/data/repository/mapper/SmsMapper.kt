@@ -11,7 +11,7 @@ import javax.inject.Inject
 private const val PRIOR_SMS_REGEX = """Karta\s+\d+\*{3}(\d+)\s+(\d{2}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\. Oplata\s+([\d.]+)\s+BYN\. BLR\s+([^.]+)\."""
 private const val PRIOR_SMS_ADDRESS_NAME = "Priorbank"
 
-internal class SmsMapper @Inject constructor() {
+class SmsMapper @Inject constructor() {
 
     private val dateTimeFormatter = DateTimeComponents.Format {
         dayOfMonth()

@@ -3,6 +3,7 @@ package com.ivy.data.repository.impl
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.repository.ProcessedSmsRepository
 import javax.inject.Inject
+import javax.inject.Singleton
 
 internal class ProcessedSmsRepositoryImpl @Inject constructor(
     private val transactionDao: TransactionDao
