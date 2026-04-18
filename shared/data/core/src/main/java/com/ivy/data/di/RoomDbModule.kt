@@ -1,5 +1,6 @@
 package com.ivy.data.di
 
+import android.content.ContentResolver
 import android.content.Context
 import com.ivy.data.db.IvyRoomDatabase
 import com.ivy.data.db.dao.read.AccountDao
@@ -25,6 +26,11 @@ import com.ivy.data.db.dao.write.WriteSettingsDao
 import com.ivy.data.db.dao.write.WriteTagAssociationDao
 import com.ivy.data.db.dao.write.WriteTagDao
 import com.ivy.data.db.dao.write.WriteTransactionDao
+import com.ivy.data.repository.ProcessedSmsRepository
+import com.ivy.data.repository.SmsRepository
+import com.ivy.data.repository.impl.ProcessedSmsRepositoryImpl
+import com.ivy.data.repository.impl.SmsRepositoryImpl
+import com.ivy.data.repository.mapper.SmsMapper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -161,5 +167,25 @@ object RoomDbModule {
     @Provides
     fun provideWriteTagAssociationDao(db: IvyRoomDatabase): WriteTagAssociationDao {
         return db.writeTagAssociationDao
+    }
+
+    @Provides
+    fun provideSmsRepository(
+        contentResolver: ContentResolver,
+        smsMapper: SmsMapper,
+    ): SmsRepository {
+        return SmsRepositoryImpl(
+            contentResolver,
+            smsMapper,
+        )
+    }
+
+    @Provides
+    fun provideProceedSmsRepository(
+        transactionDao: TransactionDao,
+    ): ProcessedSmsRepository {
+        return ProcessedSmsRepositoryImpl(
+            transactionDao,
+        )
     }
 }

@@ -179,6 +179,12 @@
             "notNull": true
           },
           {
+            "fieldPath": "smsId",
+            "columnName": "smsId",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
             "fieldPath": "id",
             "columnName": "id",
             "affinity": "TEXT",

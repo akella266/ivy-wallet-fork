@@ -14,6 +14,7 @@ dependencies {
 
     implementation(libs.datastore)
     implementation(libs.bundles.ktor)
+    implementation(libs.kotlin.datetime)
 
     testImplementation(projects.shared.data.modelTesting)
     androidTestImplementation(libs.bundles.integration.testing)
